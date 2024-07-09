@@ -8,29 +8,29 @@ cfg:
     IXI:
       IDs: 
         train: 
-          - ${data_dir}/Data/splits/IXI_train_fold0.csv
-          - ${data_dir}/Data/splits/IXI_train_fold1.csv
-          - ${data_dir}/Data/splits/IXI_train_fold2.csv
-          - ${data_dir}/Data/splits/IXI_train_fold3.csv
-          - ${data_dir}/Data/splits/IXI_train_fold4.csv
+          - ${data_dir}/splits/IXI_train_fold0.csv
+          - ${data_dir}/splits/IXI_train_fold1.csv
+          - ${data_dir}/splits/IXI_train_fold2.csv
+          - ${data_dir}/splits/IXI_train_fold3.csv
+          - ${data_dir}/splits/IXI_train_fold4.csv
         val: 
-          - ${data_dir}/Data/splits/IXI_val_fold0.csv
-          - ${data_dir}/Data/splits/IXI_val_fold1.csv
-          - ${data_dir}/Data/splits/IXI_val_fold2.csv
-          - ${data_dir}/Data/splits/IXI_val_fold3.csv
-          - ${data_dir}/Data/splits/IXI_val_fold4.csv
-        test: ${data_dir}/Data/splits/IXI_test.csv
-      keep_t2: ${data_dir}/Data/splits/avail_t2.csv
+          - ${data_dir}/splits/IXI_val_fold0.csv
+          - ${data_dir}/splits/IXI_val_fold1.csv
+          - ${data_dir}/splits/IXI_val_fold2.csv
+          - ${data_dir}/splits/IXI_val_fold3.csv
+          - ${data_dir}/splits/IXI_val_fold4.csv
+        test: ${data_dir}/splits/IXI_test.csv
+      keep_t2: ${data_dir}/splits/avail_t2.csv
 
     Brats21:
       IDs: 
-        test: ${data_dir}/Data/splits/Brats21_test.csv
-        val: ${data_dir}/Data/splits/Brats21_val.csv
+        test: ${data_dir}/splits/Brats21_test.csv
+        val: ${data_dir}/splits/Brats21_val.csv
 
     MSLUB:
       IDs: 
-        test: ${data_dir}/Data/splits/MSLUB_test.csv
-        val: ${data_dir}/Data/splits/MSLUB_val.csv
+        test: ${data_dir}/splits/MSLUB_test.csv
+        val: ${data_dir}/splits/MSLUB_val.csv
 
 
   imageDim: [160,192,160] 

@@ -5,7 +5,13 @@ from omegaconf import DictConfig
 import os 
 import sys
 import socket
-#import multiprocessing as mp
+sys.path.append(os.path.abspath('path/to/project_root/src'))
+
+# Define the path
+path_to_add = r"C:\Users\rd81\OneDrive - University of Sussex\Desktop\FROM_GIT\Conditioned-Diffusion-Models-UAD\src"
+
+# Append the path to sys.path
+sys.path.append(os.path.abspath(path_to_add))
 sys.setrecursionlimit(2000)
 # load environment variables from `.env` file if it exists
 # recursively searches for `.env` in all folders starting from work dir

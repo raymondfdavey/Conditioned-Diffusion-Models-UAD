@@ -1,0 +1,30 @@
+name: cddpm
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pytorch=1.10.0
+  - torchvision=0.11.1
+  - cudatoolkit=11.3
+  - pytorch-lightning=1.5.1
+  - numpy
+  - pandas
+  - torchio
+  - hydra-core
+  - omegaconf
+  - wandb
+  - einops
+  - tqdm
+  - pillow
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - pip
+  - pip:
+    - timm
+    - monai
+    - python-dotenv
+    - simpleitk

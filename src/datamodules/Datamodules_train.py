@@ -35,8 +35,8 @@ class IXI(LightningDataModule):
             self.csv[state]['setname'] = 'IXI'
 
 
-            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['img_path']
-            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['mask_path']
+            self.csv[state]['img_path'] = cfg.path.pathBase + self.csv[state]['img_path']
+            self.csv[state]['mask_path'] = cfg.path.pathBase + self.csv[state]['mask_path']
             self.csv[state]['seg_path'] = None
 
             if cfg.mode == 't2': 
