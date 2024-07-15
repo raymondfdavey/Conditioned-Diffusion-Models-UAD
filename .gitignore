@@ -12,8 +12,11 @@
 data/
 logs/
 wandb/
+checkpoints
 .autoenv
 # pc_environment.env
 outputlog*
 errorlog*
 .DS_Store
+DDPM_2D_IXI_DDPM_2D_.log
+DDPM_2D_IXI_DDPM_cond_2D_spark_model.cfg.pretrained_encoder-False.log

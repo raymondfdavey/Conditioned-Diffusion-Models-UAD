@@ -59,7 +59,7 @@ class Simplex_CLASS:
 
     def newSeed(self, seed=None):
         if not seed:
-            seed = np.random.randint(-10000000000, 10000000000)
+            seed = np.random.randint(-2147483648, 2147483647)
         self._perm, self._perm_grad_index3 = _init(seed)
 
 
@@ -72,7 +72,7 @@ class Simplex_CLASS:
     def noise3(self, x, y, z):
         return _noise3(x, y, z, self._perm, self._perm_grad_index3)
 
-    def noise3array(self, x, y, z):
+    def noise3array(self, x, y, z): 
         return _noise3a(x, y, z, self._perm, self._perm_grad_index3)
 
     def rand_3d_octaves(self, shape, octaves=1, persistence=0.5, frequency=32):

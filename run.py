@@ -20,7 +20,7 @@ dotenv.load_dotenv(dir_path+'/pc_environment.env',override=True)
 # dotenv.dotenv_values("pc_environment.env")
 
 
-@hydra.main(config_path="configs/", config_name="config.yaml")
+@hydra.main(config_path="configs/", config_name="config.yaml", version_base=None)
 def main(config: DictConfig):
 #    import torch
 #    torch.multiprocessing.set_sharing_strategy('file_system')

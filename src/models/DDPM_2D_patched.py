@@ -11,6 +11,7 @@ from typing import Any, List
 import torchio as tio
 from src.utils.patch_sampling import BoxSampler
 from src.utils.generate_noise import gen_noise
+
 class DDPM_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
         super().__init__()
