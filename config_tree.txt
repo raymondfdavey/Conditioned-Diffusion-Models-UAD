@@ -1,155 +1,160 @@
 CONFIG
 +-- trainer
-|   `-- _target_: pytorch_lightning.Trainer                                                                                                  
-|       gpus: -1                                                                                                                             
-|       min_epochs: 1                                                                                                                        
-|       max_epochs: 1600                                                                                                                     
-|       log_every_n_steps: 5                                                                                                                 
-|       precision: 32                                                                                                                        
-|       num_sanity_val_steps: 0                                                                                                              
-|       check_val_every_n_epoch: 1                                                                                                           
-|       benchmark: true                                                                                                                      
-|       overfit_batches: false                                                                                                               
-|                                                                                                                                            
+|   `-- _target_: pytorch_lightning.Trainer                                                                                                                                                                                       
+|       gpus: -1                                                                                                                                                                                                                  
+|       min_epochs: 1                                                                                                                                                                                                             
+|       max_epochs: 5                                                                                                                                                                                                             
+|       log_every_n_steps: 5                                                                                                                                                                                                      
+|       precision: 16                                                                                                                                                                                                             
+|       num_sanity_val_steps: 0                                                                                                                                                                                                   
+|       check_val_every_n_epoch: 1                                                                                                                                                                                                
+|       benchmark: true                                                                                                                                                                                                           
+|       overfit_batches: false                                                                                                                                                                                                    
+|                                                                                                                                                                                                                                 
 +-- model
-|   `-- _target_: src.models.DDPM_2D.DDPM_2D                                                                                                 
-|       cfg:                                                                                                                                 
-|         name: DDPM_2D                                                                                                                      
-|         imageDim:                                                                                                                          
-|         - 192                                                                                                                              
-|         - 192                                                                                                                              
-|         - 100                                                                                                                              
-|         rescaleFactor: 2                                                                                                                   
-|         interRes:                                                                                                                          
-|         - 8                                                                                                                                
-|         - 8                                                                                                                                
-|         - 5                                                                                                                                
-|         cropMode: isotropic                                                                                                                
-|         spatialDims: 2D                                                                                                                    
-|         resizedEvaluation: true                                                                                                            
-|         unet_dim: 128                                                                                                                      
-|         dim_mults:                                                                                                                         
-|         - 1                                                                                                                                
-|         - 2                                                                                                                                
-|         - 2                                                                                                                                
-|         learned_variance: false                                                                                                            
-|         learned_sinusoidal_cond: false                                                                                                     
-|         loss: l1                                                                                                                           
-|         lossStrategy: mean                                                                                                                 
-|         lr: 0.0001                                                                                                                         
-|         scheduleLR: false                                                                                                                  
-|         patienceLR: 10                                                                                                                     
-|         earlyStopping: false                                                                                                               
-|         patienceStopping: 50                                                                                                               
-|         saveOutputImages: true                                                                                                             
-|         evalSeg: true                                                                                                                      
-|         pad: true                                                                                                                          
-|         erodeBrainmask: true                                                                                                               
-|         medianFiltering: true                                                                                                              
-|         threshold: auto                                                                                                                    
-|         mode: t2                                                                                                                           
-|         test_timesteps: 500                                                                                                                
-|         objective: pred_x0                                                                                                                 
-|         residualmode: l1                                                                                                                   
-|         OpenaiUnet: true                                                                                                                   
-|         conv_resample: true                                                                                                                
-|         noisetype: simplex                                                                                                                 
-|         dropout_unet: 0.0                                                                                                                  
-|         condition: false                                                                                                                   
-|                                                                                                                                            
+|   `-- _target_: src.models.DDPM_2D.DDPM_2D                                                                                                                                                                                      
+|       cfg:                                                                                                                                                                                                                      
+|         name: DDPM_2D                                                                                                                                                                                                           
+|         imageDim:                                                                                                                                                                                                               
+|         - 192                                                                                                                                                                                                                   
+|         - 192                                                                                                                                                                                                                   
+|         - 100                                                                                                                                                                                                                   
+|         rescaleFactor: 2                                                                                                                                                                                                        
+|         interRes:                                                                                                                                                                                                               
+|         - 8                                                                                                                                                                                                                     
+|         - 8                                                                                                                                                                                                                     
+|         - 5                                                                                                                                                                                                                     
+|         cropMode: isotropic                                                                                                                                                                                                     
+|         spatialDims: 2D                                                                                                                                                                                                         
+|         resizedEvaluation: true                                                                                                                                                                                                 
+|         unet_dim: 128                                                                                                                                                                                                           
+|         dim_mults:                                                                                                                                                                                                              
+|         - 1                                                                                                                                                                                                                     
+|         - 2                                                                                                                                                                                                                     
+|         - 2                                                                                                                                                                                                                     
+|         learned_variance: false                                                                                                                                                                                                 
+|         learned_sinusoidal_cond: false                                                                                                                                                                                          
+|         loss: l1                                                                                                                                                                                                                
+|         lossStrategy: mean                                                                                                                                                                                                      
+|         lr: 0.0001                                                                                                                                                                                                              
+|         scheduleLR: false                                                                                                                                                                                                       
+|         patienceLR: 10                                                                                                                                                                                                          
+|         earlyStopping: false                                                                                                                                                                                                    
+|         patienceStopping: 50                                                                                                                                                                                                    
+|         saveOutputImages: true                                                                                                                                                                                                  
+|         evalSeg: true                                                                                                                                                                                                           
+|         pad: true                                                                                                                                                                                                               
+|         erodeBrainmask: true                                                                                                                                                                                                    
+|         medianFiltering: true                                                                                                                                                                                                   
+|         threshold: auto                                                                                                                                                                                                         
+|         mode: t2                                                                                                                                                                                                                
+|         test_timesteps: 500                                                                                                                                                                                                     
+|         backbone: Spark_Encoder_2D                                                                                                                                                                                              
+|         version: resnet50                                                                                                                                                                                                       
+|         cond_dim: 128                                                                                                                                                                                                           
+|         OpenaiUnet: true                                                                                                                                                                                                        
+|         spatial_transformer: false                                                                                                                                                                                              
+|         condition: true                                                                                                                                                                                                         
+|         noisetype: simplex                                                                                                                                                                                                      
+|         encoder_path: xxx                                                                                                                                                                                                       
+|         pretrained_encoder: false                                                                                                                                                                                               
+|         save_to_disc: false                                                                                                                                                                                                     
+|         noise_ensemble: true                                                                                                                                                                                                    
+|                                                                                                                                                                                                                                 
 +-- datamodule
-|   `-- _target_: src.datamodules.Datamodules_train.IXI                                                                                      
-|       cfg:                                                                                                                                 
-|         name: IXI                                                                                                                          
-|         path:                                                                                                                              
-|           pathBase: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED                                       
-|           IXI:                                                                                                                             
-|             IDs:                                                                                                                           
-|               train:                                                                                                                       
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold0.csv                
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold1.csv                
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold2.csv                
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold3.csv                
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold4.csv                
-|               val:                                                                                                                         
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold0.csv                  
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold1.csv                  
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold2.csv                  
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold3.csv                  
-|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold4.csv                  
-|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_test.csv                   
-|             keep_t2: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/avail_t2.csv                  
-|           Brats21:                                                                                                                         
-|             IDs:                                                                                                                           
-|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/Brats21_test.csv               
-|               val: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/Brats21_val.csv                 
-|           MSLUB:                                                                                                                           
-|             IDs:                                                                                                                           
-|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/MSLUB_test.csv                 
-|               val: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/MSLUB_val.csv                   
-|         imageDim:                                                                                                                          
-|         - 192                                                                                                                              
-|         - 192                                                                                                                              
-|         - 100                                                                                                                              
-|         rescaleFactor: 2                                                                                                                   
-|         interRes:                                                                                                                          
-|         - 8                                                                                                                                
-|         - 8                                                                                                                                
-|         - 5                                                                                                                                
-|         cropMode: isotropic                                                                                                                
-|         spatialDims: 2D                                                                                                                    
-|         unisotropic_sampling: true                                                                                                         
-|         sample_set: false                                                                                                                  
-|         preLoad: true                                                                                                                      
-|         curvatureFlow: true                                                                                                                
-|         percentile: true                                                                                                                   
-|         pad: true                                                                                                                          
-|         permute: false                                                                                                                     
-|         randomRotate: false                                                                                                                
-|         rotateDegree: 5                                                                                                                    
-|         horizontalFlip: false                                                                                                              
-|         randomBrightness: false                                                                                                            
-|         brightnessRange: (0.75,1.25)                                                                                                       
-|         randomContrast: false                                                                                                              
-|         contrastRange: (0.75,1.25)                                                                                                         
-|         modelpath: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/Data/pretrained_2D_model/              
-|         num_workers: 24                                                                                                                    
-|         batch_size: 32                                                                                                                     
-|         lr: 0.0001                                                                                                                         
-|         droplast: true                                                                                                                     
-|         mode: t2                                                                                                                           
-|         resizedEvaluation: true                                                                                                            
-|         testsets:                                                                                                                          
-|         - Datamodules_eval.Brats21                                                                                                         
-|         - Datamodules_eval.MSLUB                                                                                                           
-|         - Datamodules_train.IXI                                                                                                            
-|         aug_intensity: true                                                                                                                
-|                                                                                                                                            
+|   `-- _target_: src.datamodules.Datamodules_train.IXI                                                                                                                                                                           
+|       cfg:                                                                                                                                                                                                                      
+|         saveOutputImages: true                                                                                                                                                                                                  
+|         name: IXI                                                                                                                                                                                                               
+|         path:                                                                                                                                                                                                                   
+|           pathBase: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED                                                                                                                            
+|           IXI:                                                                                                                                                                                                                  
+|             IDs:                                                                                                                                                                                                                
+|               train:                                                                                                                                                                                                            
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold0.csv                                                                                                     
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold1.csv                                                                                                     
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold2.csv                                                                                                     
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold3.csv                                                                                                     
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_train_fold4.csv                                                                                                     
+|               val:                                                                                                                                                                                                              
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold0.csv                                                                                                       
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold1.csv                                                                                                       
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold2.csv                                                                                                       
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold3.csv                                                                                                       
+|               - /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_val_fold4.csv                                                                                                       
+|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/IXI_test.csv                                                                                                        
+|             keep_t2: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/avail_t2.csv                                                                                                       
+|           Brats21:                                                                                                                                                                                                              
+|             IDs:                                                                                                                                                                                                                
+|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/Brats21_test.csv                                                                                                    
+|               val: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/Brats21_val.csv                                                                                                      
+|           MSLUB:                                                                                                                                                                                                                
+|             IDs:                                                                                                                                                                                                                
+|               test: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/MSLUB_test.csv                                                                                                      
+|               val: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/splits/MSLUB_val.csv                                                                                                        
+|         imageDim:                                                                                                                                                                                                               
+|         - 192                                                                                                                                                                                                                   
+|         - 192                                                                                                                                                                                                                   
+|         - 100                                                                                                                                                                                                                   
+|         rescaleFactor: 2                                                                                                                                                                                                        
+|         interRes:                                                                                                                                                                                                               
+|         - 8                                                                                                                                                                                                                     
+|         - 8                                                                                                                                                                                                                     
+|         - 5                                                                                                                                                                                                                     
+|         cropMode: isotropic                                                                                                                                                                                                     
+|         spatialDims: 2D                                                                                                                                                                                                         
+|         unisotropic_sampling: true                                                                                                                                                                                              
+|         sample_set: false                                                                                                                                                                                                       
+|         preLoad: true                                                                                                                                                                                                           
+|         curvatureFlow: true                                                                                                                                                                                                     
+|         percentile: true                                                                                                                                                                                                        
+|         pad: true                                                                                                                                                                                                               
+|         permute: false                                                                                                                                                                                                          
+|         randomRotate: false                                                                                                                                                                                                     
+|         rotateDegree: 5                                                                                                                                                                                                         
+|         horizontalFlip: false                                                                                                                                                                                                   
+|         randomBrightness: false                                                                                                                                                                                                 
+|         brightnessRange: (0.75,1.25)                                                                                                                                                                                            
+|         randomContrast: false                                                                                                                                                                                                   
+|         contrastRange: (0.75,1.25)                                                                                                                                                                                              
+|         modelpath: /Users/rd81/OneDrive - University of Sussex/Desktop/FROM_GIT/DATA_FULL_PROCESSED/Data/pretrained_2D_model/                                                                                                   
+|         num_workers: 16                                                                                                                                                                                                         
+|         batch_size: 32                                                                                                                                                                                                          
+|         lr: 0.0001                                                                                                                                                                                                              
+|         droplast: true                                                                                                                                                                                                          
+|         mode: t2                                                                                                                                                                                                                
+|         resizedEvaluation: true                                                                                                                                                                                                 
+|         testsets:                                                                                                                                                                                                               
+|         - Datamodules_eval.Brats21                                                                                                                                                                                              
+|         - Datamodules_eval.MSLUB                                                                                                                                                                                                
+|         - Datamodules_train.IXI                                                                                                                                                                                                 
+|         aug_intensity: true                                                                                                                                                                                                     
+|                                                                                                                                                                                                                                 
 +-- callbacks
-|   `-- model_checkpoint:                                                                                                                    
-|         _target_: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint                                                             
-|         monitor: val/Loss_comb                                                                                                             
-|         save_top_k: 1                                                                                                                      
-|         auto_insert_metric_name: false                                                                                                     
-|         save_last: true                                                                                                                    
-|         mode: min                                                                                                                          
-|         dirpath: checkpoints/                                                                                                              
-|         filename: epoch-{epoch}_step-{step}_loss-{val/Loss_comb:.2f}                                                                       
-|                                                                                                                                            
+|   `-- model_checkpoint:                                                                                                                                                                                                         
+|         _target_: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint                                                                                                                                                  
+|         monitor: val/Loss_comb                                                                                                                                                                                                  
+|         save_top_k: 1                                                                                                                                                                                                           
+|         auto_insert_metric_name: false                                                                                                                                                                                          
+|         save_last: true                                                                                                                                                                                                         
+|         mode: min                                                                                                                                                                                                               
+|         dirpath: checkpoints/                                                                                                                                                                                                   
+|         filename: epoch-{epoch}_step-{step}_loss-{val/Loss_comb:.2f}                                                                                                                                                            
+|                                                                                                                                                                                                                                 
 +-- logger
-|   `-- wandb:                                                                                                                               
-|         _target_: pytorch_lightning.loggers.wandb.WandbLogger                                                                              
-|         project: MIDL23_DDPM                                                                                                               
-|         name: DDPM_2D_IXI_DDPM_2D_                                                                                                         
-|         save_dir: .                                                                                                                        
-|         offline: false                                                                                                                     
-|         id: null                                                                                                                           
-|         resume: false                                                                                                                      
-|         log_model: false                                                                                                                   
-|         prefix: ''                                                                                                                         
-|         job_type: ''                                                                                                                       
-|         group: ''                                                                                                                          
-|         tags: []                                                                                                                           
-|                                                                                                                                            
+|   `-- wandb:                                                                                                                                                                                                                    
+|         _target_: pytorch_lightning.loggers.wandb.WandbLogger                                                                                                                                                                   
+|         project: cDDPM                                                                                                                                                                                                          
+|         name: DDPM_2D_IXI_DDPM_cond_2D_spark_model.cfg.pretrained_encoder-False                                                                                                                                                 
+|         save_dir: .                                                                                                                                                                                                             
+|         offline: false                                                                                                                                                                                                          
+|         id: null                                                                                                                                                                                                                
+|         resume: false                                                                                                                                                                                                           
+|         log_model: false                                                                                                                                                                                                        
+|         prefix: ''                                                                                                                                                                                                              
+|         job_type: ''                                                                                                                                                                                                            
+|         group: ''                                                                                                                                                                                                               
+|         tags: []                                                                                                                                                                                                                
+|                                                                                                                                                                                                                                 
 `-- seed
-    `-- 3141                                                                                                                                 
+    `-- 3141                                                                                                                                                                                                                      

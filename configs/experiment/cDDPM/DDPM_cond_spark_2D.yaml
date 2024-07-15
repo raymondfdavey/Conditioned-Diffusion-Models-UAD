@@ -38,6 +38,6 @@ logger:
 ckpt_path: best 
 
 trainer:
-  max_epochs: 1200
+  max_epochs: 5
 name : DDPM_cond_2D_spark
 seed: 3141

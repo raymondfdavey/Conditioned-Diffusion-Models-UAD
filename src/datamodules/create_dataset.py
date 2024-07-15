@@ -28,10 +28,14 @@ def Train(csv,cfg,preload=True):
         subjects.append(subject)
     
     if preload: 
-        manager = Manager()
-        cache = DatasetCache(manager)
-        ds = tio.SubjectsDataset(subjects, transform = get_transform(cfg))
-        ds = preload_wrapper(ds, cache, augment = get_augment(cfg))
+        # manager = Manager()
+        # cache = DatasetCache(manager)
+        # ds = tio.SubjectsDataset(subjects, transform = get_transform(cfg))
+        
+        ds = tio.SubjectsDataset(subjects, transform = tio.Compose([get_transform(cfg),get_augment(cfg)]))
+
+
+        # ds = preload_wrapper(ds, cache, augment = get_augment(cfg))
     else: 
         ds = tio.SubjectsDataset(subjects, transform = tio.Compose([get_transform(cfg),get_augment(cfg)]))
         
