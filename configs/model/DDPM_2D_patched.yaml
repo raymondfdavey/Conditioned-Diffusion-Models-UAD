@@ -28,7 +28,7 @@ cfg:
   patienceLR: 10
 
   # Early Stopping
-  earlyStopping: False 
+  earlyStopping: True 
   patienceStopping: 50
 
   ## Evaluation

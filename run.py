@@ -5,7 +5,6 @@ from omegaconf import DictConfig
 import os 
 import sys
 import socket
-sys.path.append(os.path.abspath('path/to/project_root/src'))
 
 # Define the path
 path_to_add = r"C:\Users\rd81\OneDrive - University of Sussex\Desktop\FROM_GIT\Conditioned-Diffusion-Models-UAD\src"

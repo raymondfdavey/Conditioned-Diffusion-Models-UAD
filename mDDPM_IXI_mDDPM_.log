@@ -1,0 +1,28 @@
+[2024-07-17 12:28:51,249][src.train][INFO] - Seed specified to 3141 by config
+[2024-07-17 12:28:51,250][pytorch_lightning.utilities.seed][INFO] - Global seed set to 3141
+[2024-07-17 12:28:51,253][src.train][INFO] - Training Fold 1 of 1 in the WandB group mDDPM
+[2024-07-17 12:28:51,254][src.train][INFO] - Instantiating datamodule <src.datamodules.Datamodules_train.IXI>
+[2024-07-17 12:28:52,068][src.train][INFO] - Instantiating model <src.models.mDDPM.DDPM_2D>
+[2024-07-17 12:30:29,159][src.train][INFO] - Seed specified to 3141 by config
+[2024-07-17 12:30:29,169][pytorch_lightning.utilities.seed][INFO] - Global seed set to 3141
+[2024-07-17 12:30:29,173][src.train][INFO] - Training Fold 1 of 1 in the WandB group mDDPM
+[2024-07-17 12:30:29,173][src.train][INFO] - Instantiating datamodule <src.datamodules.Datamodules_train.IXI>
+[2024-07-17 12:30:29,955][src.train][INFO] - Instantiating model <src.models.mDDPM.DDPM_2D>
+[2024-07-17 12:30:32,091][src.train][INFO] - Instantiating callback <pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint>
+[2024-07-17 12:30:32,092][src.train][INFO] - Instantiating logger <pytorch_lightning.loggers.wandb.WandbLogger>
+[2024-07-17 12:30:42,556][src.train][INFO] - Instantiating trainer <pytorch_lightning.Trainer>
+[2024-07-17 12:30:42,582][pytorch_lightning.utilities.rank_zero][INFO] - GPU available: True, used: True
+[2024-07-17 12:30:42,582][pytorch_lightning.utilities.rank_zero][INFO] - TPU available: False, using: 0 TPU cores
+[2024-07-17 12:30:42,583][pytorch_lightning.utilities.rank_zero][INFO] - IPU available: False, using: 0 IPUs
+[2024-07-17 12:30:42,583][pytorch_lightning.utilities.rank_zero][INFO] - HPU available: False, using: 0 HPUs
+[2024-07-17 12:30:42,584][src.train][INFO] - Logging hyperparameters!
+[2024-07-17 12:31:09,624][pytorch_lightning.accelerators.gpu][INFO] - LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+[2024-07-17 12:31:09,630][pytorch_lightning.callbacks.model_summary][INFO] - 
+  | Name      | Type              | Params
+------------------------------------------------
+0 | diffusion | GaussianDiffusion | 37.5 M
+------------------------------------------------
+37.5 M    Trainable params
+0         Non-trainable params
+37.5 M    Total params
+150.055   Total estimated model params size (MB)
