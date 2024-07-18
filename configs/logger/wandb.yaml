@@ -2,15 +2,14 @@
 
 wandb:
   _target_: pytorch_lightning.loggers.wandb.WandbLogger
-  project: "patched DDPMs MIDL23"
-  name:  ${hydra:job.name}
-  save_dir: "."
-  offline: False # set True to store all logs only locally
-  id: null # pass correct id to resume experiment!
-  resume: False
-  log_model: False
+  project: "patched DDPMs RAY_MSC_2024"
+  name: ${hydra:job.name}
+  save_dir: "."  # Save wandb files in a specific directory
+  offline: False
+  id: ${oc.select:wandb.id,null}  # This allows you to override the ID via command line
+  resume: "allow"  # This allows wandb to resume a previous run if an ID is provided
+  log_model: True  # Log model checkpoints to wandb
   prefix: ""
   job_type: ""
-  group: ""
+  group: ${name}  # Group runs by experiment name
   tags: []
-  # note: ""

@@ -1,0 +1,6 @@
+[2024-07-17 22:12:25,860][src.train][INFO] - Resuming wandb run
+[2024-07-17 22:12:25,861][src.train][INFO] - Seed specified to 3141 by config
+[2024-07-17 22:12:25,861][pytorch_lightning.utilities.seed][INFO] - Global seed set to 3141
+[2024-07-17 22:12:25,865][src.train][INFO] - Training Fold 1 of 1 in the WandB group DDPM_cond_2D_spark
+[2024-07-17 22:12:25,865][src.train][INFO] - Instantiating datamodule <src.datamodules.Datamodules_train.IXI>
+[2024-07-17 22:12:26,703][src.train][INFO] - Instantiating model <src.models.DDPM_2D.DDPM_2D>

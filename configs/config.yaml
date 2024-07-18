@@ -51,4 +51,5 @@ new_wandb_run: False # if we want to reevaluate to a new wandb run
 checkpoint: 'best' # which checkpoints to load
 
 
-load_checkpoint: path_to_ckpt # path to checkpoint to load
+# load_checkpoint: "C:\\Users\\rd81\\OneDrive - University of Sussex\\Desktop\\FROM_GIT\\Conditioned-Diffusion-Models-UAD"
+# resume_train: False
