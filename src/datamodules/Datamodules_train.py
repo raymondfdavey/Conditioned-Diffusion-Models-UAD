@@ -3,7 +3,7 @@ from pytorch_lightning import LightningDataModule
 import src.datamodules.create_dataset as create_dataset
 from typing import Optional
 import pandas as pd
-
+import os
 
 class IXI(LightningDataModule):
 
@@ -11,7 +11,8 @@ class IXI(LightningDataModule):
         super(IXI, self).__init__()
         self.cfg = cfg
         self.preload = cfg.get('preload',True)
-        # load data paths and indices
+        
+
         # IXI
 
         self.cfg.permute = False # no permutation for IXI
@@ -29,14 +30,35 @@ class IXI(LightningDataModule):
         self.csv['test'] = pd.read_csv(self.csvpath_test)
         if cfg.mode == 't2':
             keep_t2 = pd.read_csv(cfg.path.IXI.keep_t2) # only keep t2 images that have a t1 counterpart
+        
+        # # Print the file paths
+        # print(f"Train CSV path: {self.csvpath_train}")
+        # print(f"Val CSV path: {self.csvpath_val}")
+        # print(f"Test CSV path: {self.csvpath_test}")
+        # print(f"keep_t2 path: {self.cfg.path.IXI.keep_t2}")
+        #         # Get the current working directory
+        # current_dir = os.getcwd()
+        # print(f"Current working directory: {current_dir}")
+        
+        # print("OTHER STUFF")
+        # print('cfg/path', cfg.path)
+        # print('cfg.path.base', cfg.path.pathBase)
+        # # print('exmaples',cfg. path.pathBase + '/Data' + self.csv[state]['img_path'])
+            
 
+        # load data paths and indices
         for state in states:
+            # print(f"State: {state}")
+            # print(self.csv[state].tail())
+            # for img_path, mask_path in zip(self.csv[state]['img_path'], self.csv[state]['mask_path']):
+                # print('exmaples1', cfg.path.pathBase + '/Data' + img_path)
+                # print('exmaples2', cfg.path.pathBase + '/Data' + mask_path)
             self.csv[state]['settype'] = state
             self.csv[state]['setname'] = 'IXI'
 
 
-            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['img_path']
-            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['mask_path']
+            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['img_path']
+            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['mask_path']
             self.csv[state]['seg_path'] = None
 
             if cfg.mode == 't2': 

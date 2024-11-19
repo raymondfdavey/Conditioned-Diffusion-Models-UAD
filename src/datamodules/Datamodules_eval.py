@@ -24,9 +24,9 @@ class Brats21(LightningDataModule):
             self.csv[state]['settype'] = state
             self.csv[state]['setname'] = 'Brats21'
 
-            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['img_path']
-            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['mask_path']
-            self.csv[state]['seg_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['seg_path']
+            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['img_path']
+            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['mask_path']
+            self.csv[state]['seg_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['seg_path']
 
             if cfg.mode != 't1':
                 self.csv[state]['img_path'] = self.csv[state]['img_path'].str.replace('t1',cfg.mode).str.replace('FLAIR.nii.gz',f'{cfg.mode.lower()}.nii.gz')
@@ -68,9 +68,9 @@ class MSLUB(LightningDataModule):
             self.csv[state]['settype'] = state
             self.csv[state]['setname'] = 'MSLUB'
 
-            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['img_path']
-            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['mask_path']
-            self.csv[state]['seg_path'] = cfg.path.pathBase + '/Data/' + self.csv[state]['seg_path']
+            self.csv[state]['img_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['img_path']
+            self.csv[state]['mask_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['mask_path']
+            self.csv[state]['seg_path'] = cfg.path.pathBase + '/Data' + self.csv[state]['seg_path']
             
             if cfg.mode != 't1':
                 self.csv[state]['img_path'] = self.csv[state]['img_path'].str.replace('uniso/t1',f'uniso/{cfg.mode}').str.replace('t1.nii.gz',f'{cfg.mode}.nii.gz')

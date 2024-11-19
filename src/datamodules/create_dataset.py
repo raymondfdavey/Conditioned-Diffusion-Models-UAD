@@ -9,7 +9,11 @@ from multiprocessing import Manager
 
 def Train(csv,cfg,preload=True):
     subjects = []
-    for _, sub in csv.iterrows():
+    # print(f"Creating TRAIN dataset with {len(csv)} samples")
+
+    for idx, sub in csv.iterrows():
+        # print(f"Processing TRAIN sample {idx}: {sub.img_path}")
+
         subject_dict = {
             'vol' : tio.ScalarImage(sub.img_path,reader=sitk_reader), 
             'age' : sub.age,
@@ -22,6 +26,8 @@ def Train(csv,cfg,preload=True):
         if sub.mask_path != None: # if we have masks
             subject_dict['mask'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)
         else: # if we don't have masks, we create a mask from the image
+            # print(f"Creating mask from image for {sub.img_path}")
+
             subject_dict['mask'] = tio.LabelMap(tensor=tio.ScalarImage(sub.img_path,reader=sitk_reader).data>0)
 
         subject = tio.Subject(subject_dict)
@@ -36,6 +42,8 @@ def Train(csv,cfg,preload=True):
         ds = tio.SubjectsDataset(subjects, transform = tio.Compose([get_transform(cfg),get_augment(cfg)]))
         
     if cfg.spatialDims == '2D':
+        # print("Converting to 2D slices")
+
         slice_ind = cfg.get('startslice',None) 
         seq_slices = cfg.get('sequentialslices',None) 
         ds = vol2slice(ds,cfg,slice=slice_ind,seq_slices=seq_slices)
@@ -43,10 +51,13 @@ def Train(csv,cfg,preload=True):
  
 def Eval(csv,cfg): 
     subjects = []
-    for _, sub in csv.iterrows():
+    # print(f"Creating EVAL dataset with {len(csv)} samples")
+
+    for idx, sub in csv.iterrows():
         if sub.mask_path is not None and tio.ScalarImage(sub.img_path,reader=sitk_reader).shape != tio.ScalarImage(sub.mask_path,reader=sitk_reader).shape:
             print(f'different shapes of vol and mask detected. Shape vol: {tio.ScalarImage(sub.img_path,reader=sitk_reader).shape}, shape mask: {tio.ScalarImage(sub.mask_path,reader=sitk_reader).shape} \nsamples will be resampled to the same dimension')
-            
+        # print(f"Processing EVAUL sample {idx}: {sub.img_path}")
+
         subject_dict = {
             'vol' : tio.ScalarImage(sub.img_path,reader=sitk_reader),
             'vol_orig' : tio.ScalarImage(sub.img_path,reader=sitk_reader), # we need the image in original size for evaluation
@@ -58,16 +69,23 @@ def Eval(csv,cfg):
             'seg_available': False,
             'path' : sub.img_path }
         if sub.seg_path != None: # if we have segmentations
+            # print(f"WEHAVE EVAL SEG from image for {sub.img_path}")
+            
             subject_dict['seg'] = tio.LabelMap(sub.seg_path,reader=sitk_reader),
             subject_dict['seg_orig'] = tio.LabelMap(sub.seg_path,reader=sitk_reader)# we need the image in original size for evaluation
             subject_dict['seg_available'] = True
         if sub.mask_path != None: # if we have masks
+            # print(f"WE HAVE EVAL MASK from image for {sub.img_path}")
+
             subject_dict['mask'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)
             subject_dict['mask_orig'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)# we need the image in original size for evaluation
         else: 
+            # print(f"Creating EVAL mask from image for {sub.img_path}")
             tens=tio.ScalarImage(sub.img_path,reader=sitk_reader).data>0
             subject_dict['mask'] = tio.LabelMap(tensor=tens)
             subject_dict['mask_orig'] = tio.LabelMap(tensor=tens)
+        
+        # print(f"MAKING TIO SUBJECT {sub.img_path}")
 
         subject = tio.Subject(subject_dict)
         subjects.append(subject)
@@ -131,11 +149,14 @@ class vol2slice(Dataset):
             self.counter = 0 
             self.ind = None
             self.cfg = cfg
+            print(f"Created vol2slice with {len(ds)} volumes")
 
     def __len__(self):
             return len(self.ds)
             
     def __getitem__(self, index):
+        # print(f"Getting slice for volume {index}")
+
         subject = self.ds.__getitem__(index)
         if self.onlyBrain:
             start_ind = None
@@ -162,6 +183,7 @@ class vol2slice(Dataset):
                 self.counter = self.counter +1
             else: 
                 self.ind = torch.randint(low,high,size=[1])
+                # print(f"Selected slice {self.ind} for volume {index}")
 
         subject['ind'] = self.ind
 

@@ -1,0 +1,4 @@
+(cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda create -n cddpm python=3.9
+(cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda activate cddpm
+(cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda install pytorch=1.13.1 torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+(cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda env update -f environment.yml
