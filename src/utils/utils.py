@@ -188,10 +188,20 @@ def get_yaml(path): # read yaml
 def get_checkpoint(cfg, path): 
     checkpoint_path = path
     checkpoint_to_load = cfg.get("checkpoint",'last') # default to last.ckpt 
+    print('---------------')
+    print(path)
+    print(checkpoint_to_load)
+    
     all_checkpoints = os.listdir(checkpoint_path + '/checkpoints')
+    print(all_checkpoints)
+    print(path)
     hparams = get_yaml(path+'/csv//hparams.yaml')
     wandbID = hparams['run_id']
+    print(wandbID)
     checkpoints = {}
+    
+    
+    
     for fold in range(cfg.get('num_folds',1)):
         checkpoints[f'fold-{fold+1}'] = [] # dict to store the checkpoints with their path for different folds
 
@@ -200,6 +210,9 @@ def get_checkpoint(cfg, path):
         matching_checkpoints.sort(key = lambda x: x.split('fold-')[1][0:1])
         for fold, cp_name in enumerate(matching_checkpoints):
             checkpoints[f'fold-{fold+1}'] = checkpoint_path + '/checkpoints/' + cp_name
+            
+            
+            
     elif 'best' in checkpoint_to_load :
         matching_checkpoints = [c for c in all_checkpoints if "last" not in c]
         matching_checkpoints.sort(key = lambda x: x.split('loss-')[1][0:4]) # sort by loss value -> increasing
@@ -209,6 +222,10 @@ def get_checkpoint(cfg, path):
                     checkpoints[fold].append(checkpoint_path + '/checkpoints/' + cp)
             if not 'best_k' in checkpoint_to_load: # best_k loads the k best checkpoints 
                 checkpoints[fold] = checkpoints[fold][0] # get only the best (first) checkpoint of that fold
+    
+    print(checkpoints)
+    print('---------------')
+    
     return wandbID, checkpoints
 
 

@@ -1,4 +1,12 @@
 # @package _global_
+# config.yaml (root)
+# ├── trainer/default.yaml (training parameters)
+# ├── model/DDPM_2D.yaml (base model architecture)
+# ├── datamodule/IXI.yaml (dataset configuration)
+# ├── callbacks/checkpoint.yaml (callback settings)
+# ├── logger/wandb.yaml (logging settings)
+# ├── experiment/DDPM_cond_spark_2D.yaml (specific experiment config)
+# └── mode/default.yaml (runtime mode settings)
 
 # specify here default training configuration
 defaults:
@@ -8,18 +16,15 @@ defaults:
   - datamodule: IXI.yaml
   - callbacks: 
     - checkpoint.yaml # set this to null if you don't want to use callbacks
-
-    
   - logger: # set logger here or use command line (e.g. `python run.py logger=wandb`)
     - wandb
     - csv 
   - experiment: DDPM.yaml # set experiment here or use command line (e.g. `python run.py experiment=DDPM`) 
   - mode: default.yaml
-
   # enable color logging
   - override hydra/hydra_logging: colorlog
   - override hydra/job_logging: colorlog
-
+    
 # path to original working directory
 # hydra hijacks working directory by changing it to the current log directory,
 # so it's useful to have this path as a special variable
@@ -37,7 +42,7 @@ name : ${experiment.name}
 debug: False
 
 # pretty print config at the start of the run using Rich library
-print_config: True
+print_config: False
 
 # disable python warnings if they annoy you
 ignore_warnings: False
@@ -46,9 +51,9 @@ ignore_warnings: False
 # lightning chooses best model based on metric specified in checkpoint callback
 test_after_training: True
 
-onlyEval: False
-new_wandb_run: False # if we want to reevaluate to a new wandb run 
+onlyEval: True
+new_wandb_run: True # if we want to reevaluate to a new wandb run 
 checkpoint: 'best' # which checkpoints to load
 
 
-load_checkpoint: path_to_ckpt # path to checkpoint to load
+load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08

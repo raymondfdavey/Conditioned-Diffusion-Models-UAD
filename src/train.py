@@ -34,7 +34,7 @@ def train(cfg: DictConfig) -> Optional[float]:
     base = cfg.callbacks.model_checkpoint.monitor # naming of logs
     if 'early_stop' in cfg.callbacks:
         base_es = cfg.callbacks.early_stop.monitor # early stop base metric
-
+    print(cfg.get('load_checkpoint'))
     # load checkpoint if specified
     if cfg.get('load_checkpoint')  and (cfg.get('onlyEval') or cfg.get('resume_train')): # load stored checkpoint for testing or resuming training
         wandbID, checkpoints = utils.get_checkpoint(cfg, cfg.get('load_checkpoint')) # outputs a Dictionary of checkpoints and the corresponding wandb ID to resume the run 
@@ -62,7 +62,8 @@ def train(cfg: DictConfig) -> Optional[float]:
     end_fold = cfg.get('num_folds',5)
     if start_fold != 0:
         log.info(f'skipping the first {start_fold} fold(s)') 
-
+    print(start_fold)
+    print(end_fold)
     # iterate over folds from start_fold to num_fold
     for fold in range(start_fold,end_fold): # iterate over folds 
         
@@ -76,6 +77,7 @@ def train(cfg: DictConfig) -> Optional[float]:
 
         # Init lightning model
         log.info(f"Instantiating model <{cfg.model._target_}>")
+        print('MAKING THE ACTUAL MODEL HERE INCLUDING LOADING THE PRETRAINED ENCODER')
         model: LightningModule = hydra.utils.instantiate(cfg.model,prefix=prefix) # instantiate model
 
         # setup callbacks
@@ -110,7 +112,8 @@ def train(cfg: DictConfig) -> Optional[float]:
             with open_dict(cfg):
                 cfg.trainer.resume_from_checkpoint = checkpoints[f"fold-{fold+1}"]
                 cfg.ckpt_path=None
-            log.info(f"Restoring Trainer State of loaded checkpoint: ",cfg.trainer.resume_from_checkpoint)
+            log.info(f"Restoring Trainer State of loaded checkpoint: {cfg.trainer.resume_from_checkpoint}")
+
 
         # Init lightning trainer
         log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
@@ -134,13 +137,15 @@ def train(cfg: DictConfig) -> Optional[float]:
             trainer.fit(model, datamodule_train)
             validation_metrics = trainer.callback_metrics
         else: # load trained model
+            print('loading model from checkpoint')
             model.load_state_dict(torch.load(checkpoints[f'fold-{fold+1}'])['state_dict'])
+            print('done loading model from checkpoint')
 
         # logging
-        log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
-        log.info(f"Best checkpoint metric:\n{trainer.checkpoint_callback.best_model_score}")
-        trainer.logger.experiment[0].log({'best_ckpt_path':trainer.checkpoint_callback.best_model_path})
-        trainer.logger.experiment[0].log({'logdir':trainer.log_dir})
+        # log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
+        # log.info(f"Best checkpoint metric:\n{trainer.checkpoint_callback.best_model_score}")
+        # trainer.logger.experiment[0].log({'best_ckpt_path':trainer.checkpoint_callback.best_model_path})
+        # trainer.logger.experiment[0].log({'logdir':trainer.log_dir})
 
         # metrics
         validation_metrics = trainer.callback_metrics
@@ -163,7 +168,11 @@ def train(cfg: DictConfig) -> Optional[float]:
                     't2':['Datamodules_eval.Brats21','Datamodules_eval.MSLUB','Datamodules_train.IXI'],
                    }
             
-                
+#                   testsets: # specify which test sets to evaluate!
+#   # - Datamodules_eval.Brats21
+#   # - Datamodules_eval.MSLUB
+#   - Datamodules_train.IXI
+
             for set in cfg.datamodule.cfg.testsets :
                 if not set in sets[cfg.datamodule.cfg.mode]: # skip testsets of different modalities
                     continue    
@@ -177,6 +186,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 log.info("Validation of {}!".format(set))
 
                 ckpt_path=cfg.get('ckpt_path',None)
+                print('!!!!!', ckpt_path)
 
                 if 'train' in set:
                     trainer.test(model=model,dataloaders=datamodule.val_eval_dataloader(),ckpt_path=ckpt_path)
@@ -185,7 +195,6 @@ def train(cfg: DictConfig) -> Optional[float]:
                 # evaluation results
                 preds_dict['val'][set] = trainer.lightning_module.eval_dict
                 log_dict = utils.summarize(preds_dict['val'][set],'val') # sets prefix val/ and removes lists for better logging in wandb
-
                 # Test steps
                 log.info("Test of {}!".format(set))
                 if 'train' in set:

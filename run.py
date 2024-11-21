@@ -5,6 +5,9 @@ from omegaconf import DictConfig
 import os 
 import sys
 import socket
+print('syspath', sys.path)
+
+
 #import multiprocessing as mp
 sys.setrecursionlimit(2000)
 # load environment variables from `.env` file if it exists
@@ -30,15 +33,14 @@ def main(config: DictConfig):
     # You can safely get rid of this line if you don't want those
     
     
-        # Get the original working directory
-    original_cwd = hydra.utils.get_original_cwd()
+    # Get the original working directory
+    # original_cwd = hydra.utils.get_original_cwd()
     # print(f"Original working directory: {original_cwd}")
     
         # Check if environment variables are loaded correctly
     # print(f"DATA_DIR: {os.environ.get('DATA_DIR')}")
     # print(f"LOG_DIR: {os.environ.get('LOG_DIR')}")
 
-    
     
     utils.extras(config)
 

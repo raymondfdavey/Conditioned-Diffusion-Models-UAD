@@ -74,7 +74,8 @@ class DDPM_2D(LightningModule):
         if cfg.get('pretrained_encoder',False): # load pretrained encoder from cfg.modelpath
             print('Loading pretrained encoder from: ', cfg.encoder_path)
             assert cfg.get('encoder_path',None) is not None
-
+            print('encoder path, ', cfg.get('encoder_path',None))
+            
             state_dict_pretrained = torch.load(cfg.get('encoder_path',None))['state_dict']
             new_statedict = OrderedDict()
             for key in zip(state_dict_pretrained): 
@@ -88,7 +89,7 @@ class DDPM_2D(LightningModule):
                 else:
                     new_statedict[key[0]] = state_dict_pretrained[key[0]]
             self.encoder.load_state_dict(new_statedict,strict=False)
-
+        
         self.prefix = prefix
         
         self.save_hyperparameters()

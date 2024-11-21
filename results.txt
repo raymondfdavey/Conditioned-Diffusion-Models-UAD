@@ -1,0 +1,10 @@
+FULL MODEL
+
+[2024-11-21 02:55:11,726][src.train][INFO] - Best checkpoint path:                                                                                             
+checkpoints/epoch-983_step-11807_loss-0.00_fold-1.ckpt
+[2024-11-21 02:55:11,726][src.train][INFO] - Best checkpoint metric:
+0.03452069312334061
+
+PRETRAINED ENCODER
+
+/home/rd81/projects/logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-19_16-19-51/checkpoints/epoch-932_step-11195_loss-0.00_fold-1.ckpt
