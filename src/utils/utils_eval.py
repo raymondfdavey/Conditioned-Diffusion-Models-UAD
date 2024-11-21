@@ -573,44 +573,36 @@ def normalize(tensor): # THanks DZimmerer
 
     return tens_deta
 
-def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None,  flow=None ):
-    ImagePathList = {
-                    'imagesGrid': os.path.join(os.getcwd(),'grid')}
-    for key in ImagePathList :
+def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None, flow=None):
+    ImagePathList = {'imagesGrid': os.path.join(os.getcwd(),'grid')}
+    for key in ImagePathList:
         if not os.path.isdir(ImagePathList[key]):
             os.mkdir(ImagePathList[key])
 
-    for j in range(0,diff_volume.squeeze().shape[2],10) : 
-
-        # create a figure of images with 1 row and 4 columns for subplots
+    for j in range(0,diff_volume.squeeze().shape[2],10):
         fig, ax = plt.subplots(1,4,figsize=(16,4))
-        # change spacing between subplots
         fig.subplots_adjust(wspace=0.0)
-        # orig
+        
         ax[0].imshow(data_orig.squeeze()[...,j].rot90(3),'gray')
-        # reconstructed
         ax[1].imshow(final_volume[...,j].rot90(3).squeeze(),'gray')
-        # difference
         ax[2].imshow(diff_volume.squeeze()[:,...,j].rot90(3),'inferno',norm=colors.Normalize(vmin=0, vmax=diff_volume.max()+.01))
-        # mask
         ax[3].imshow(data_seg.squeeze()[...,j].rot90(3),'gray')
         
-        # remove all the ticks (both axes), and tick labels
         for axes in ax:
             axes.set_xticks([])
             axes.set_yticks([])
-        # remove the frame of the chart
-        for axes in ax:
-            axes.spines['top'].set_visible(False)
-            axes.spines['right'].set_visible(False)
-            axes.spines['bottom'].set_visible(False)
-            axes.spines['left'].set_visible(False)
-        # remove the white space around the chart
+            for spine in axes.spines.values():
+                spine.set_visible(False)
+                
         plt.tight_layout()
         
         if self.cfg.get('save_to_disc',True):
-            plt.savefig(os.path.join(ImagePathList['imagesGrid'], '{}_{}_Grid.png'.format(ID[0],j)),bbox_inches='tight')
-        self.logger.experiment[0].log({'images/{}/{}_Grid.png'.format(self.dataset[0],j) : wandb.Image(plt)})
+            plt.savefig(os.path.join(ImagePathList['imagesGrid'], '{}_{}_Grid.png'.format(ID[0],j)), bbox_inches='tight')
+        
+        if hasattr(self, 'trainer') and hasattr(self.trainer, 'loggers'):
+            logger = self.trainer.loggers[0]
+            logger.experiment.log({'images/{}/{}_Grid.png'.format(self.dataset[0],j): wandb.Image(plt)})
+            
         plt.clf()
         plt.cla()
         plt.close()

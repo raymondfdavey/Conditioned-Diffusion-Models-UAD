@@ -5,7 +5,7 @@ from omegaconf import DictConfig
 import os 
 import sys
 import socket
-print('syspath', sys.path)
+# print('syspath', sys.path)
 
 
 #import multiprocessing as mp
@@ -17,7 +17,7 @@ dotenv.load_dotenv(dir_path+'/pc_environment.env',override=True)
 # dotenv.dotenv_values("pc_environment.env")
 print(dir_path)
 
-@hydra.main(config_path="configs/", config_name="config.yaml")
+@hydra.main(config_path="configs/", config_name="config.yaml", version_base="1.1")
 def main(config: DictConfig):
 #    import torch
 #    torch.multiprocessing.set_sharing_strategy('file_system')

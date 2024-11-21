@@ -26,7 +26,9 @@ model:
     spatial_transformer: False # use crossattention for conditional features
     condition: True # use conditional features
     noisetype: simplex
-    encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-19_16-19-51/checkpoints/epoch-932_step-11195_loss-0.00_fold-1.ckpt # path to encoder weights
+    # encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-19_16-19-51/checkpoints/epoch-932_step-11195_loss-0.00_fold-1.ckpt # path to encoder weights
+    #mac
+    encoder_path: /Users/rfd/Desktop/DISS/project/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-19_16-19-51/checkpoints/epoch-932_step-11195_loss-0.00_fold-1.ckpt
     pretrained_encoder: True
     save_to_disc: False
     noise_ensemble: True

@@ -56,4 +56,7 @@ new_wandb_run: True # if we want to reevaluate to a new wandb run
 checkpoint: 'best' # which checkpoints to load
 
 
-load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08
+# load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08
+
+#mac
+load_checkpoint: /Users/rfd/Desktop/DISS/project/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08

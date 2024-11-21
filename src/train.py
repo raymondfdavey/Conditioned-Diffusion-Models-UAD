@@ -22,6 +22,7 @@ os.environ['NUMEXPR_MAX_THREADS'] = '16'
 warnings.filterwarnings(
     "ignore", ".*Trying to infer the `batch_size` from an ambiguous collection.*"
 )
+device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 
 log = utils.get_logger(__name__) # init logger
@@ -138,14 +139,16 @@ def train(cfg: DictConfig) -> Optional[float]:
             validation_metrics = trainer.callback_metrics
         else: # load trained model
             print('loading model from checkpoint')
-            model.load_state_dict(torch.load(checkpoints[f'fold-{fold+1}'])['state_dict'])
+            #mac
+
+            model.load_state_dict(torch.load(checkpoints[f'fold-{fold+1}'], map_location=device)['state_dict'])
             print('done loading model from checkpoint')
 
         # logging
-        # log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
-        # log.info(f"Best checkpoint metric:\n{trainer.checkpoint_callback.best_model_score}")
-        # trainer.logger.experiment[0].log({'best_ckpt_path':trainer.checkpoint_callback.best_model_path})
-        # trainer.logger.experiment[0].log({'logdir':trainer.log_dir})
+        log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
+        log.info(f"Best checkpoint metric:\n{trainer.checkpoint_callback.best_model_score}")
+        trainer.loggers[0].experiment.log({'best_ckpt_path':trainer.checkpoint_callback.best_model_path})
+        trainer.loggers[0].experiment.log({'logdir':trainer.log_dir})
 
         # metrics
         validation_metrics = trainer.callback_metrics
@@ -206,7 +209,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 preds_dict['test'][set] = trainer.lightning_module.eval_dict
                 log_dict.update(utils.summarize(preds_dict['test'][set],'test')) # sets prefix test/ and removes lists for better logging in wandb
                 log_dict = utils.summarize(log_dict,f'{fold+1}/'+set) # sets prefix for each data set
-                trainer.logger.experiment[0].log(log_dict)
+                trainer.loggers[0].experiment.log(log_dict)
 
                 
 

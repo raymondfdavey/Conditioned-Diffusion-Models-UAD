@@ -14,6 +14,8 @@ from omegaconf import open_dict
 from collections import OrderedDict
 from src.models.LDM.modules.diffusionmodules.util import timestep_embedding
 
+device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
 class DDPM_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
         super().__init__()
@@ -76,7 +78,7 @@ class DDPM_2D(LightningModule):
             assert cfg.get('encoder_path',None) is not None
             print('encoder path, ', cfg.get('encoder_path',None))
             
-            state_dict_pretrained = torch.load(cfg.get('encoder_path',None))['state_dict']
+            state_dict_pretrained = torch.load(cfg.get('encoder_path',None), map_location=device)['state_dict']
             new_statedict = OrderedDict()
             for key in zip(state_dict_pretrained): 
                 if 'slice_encoder' in key[0] :
@@ -88,6 +90,7 @@ class DDPM_2D(LightningModule):
                         new_statedict[new_key] = state_dict_pretrained[key[0]]
                 else:
                     new_statedict[key[0]] = state_dict_pretrained[key[0]]
+            # mac       
             self.encoder.load_state_dict(new_statedict,strict=False)
         
         self.prefix = prefix

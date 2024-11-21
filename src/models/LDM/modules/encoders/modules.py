@@ -175,7 +175,7 @@ class FrozenClipImageEmbedder(nn.Module):
             self,
             model,
             jit=False,
-            device='cuda' if torch.cuda.is_available() else 'cpu',
+            device = torch.device("mps" if torch.backends.mps.is_available() else "cpu"),
             antialias=False,
         ):
         super().__init__()

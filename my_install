@@ -2,3 +2,24 @@
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda activate cddpm
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda install pytorch=1.13.1 torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda env update -f environment.yml
+
+silicone mac reaplace torch one with:
+
+
+conda create -n cddpm python=3.9
+conda install pytorch=1.13.1 torchvision torchaudio -c pytorch 
+
+conda env update -f environment_mac.yml
+
+conda install -c conda-forge "libblas=*=*netlib" "liblapack=*=*netlib"
+conda install pytorch torchaudio -c pytorch
+pip install pytorch-lightning==1.6.5
+conda install -c simpleitk simpleitk
+pip install torchio
+pip install ema_pytorch
+pip uninstall huggingface-hub transformers
+pip install huggingface-hub transformers --no-deps
+pip install accelerate
+
+to get conda
+source ~/miniconda3/bin/activate  
