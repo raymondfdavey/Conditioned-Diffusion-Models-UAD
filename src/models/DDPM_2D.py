@@ -98,8 +98,9 @@ class DDPM_2D(LightningModule):
         if self.cfg.get('condition',True):
             x = self.encoder(x)
             #! this is c - the 128 dim encoding of the image that is the basis for c` and c` proj
-            # print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
-            # print("Context vector c:", x)
+            print("i'm i DDPM2d forward block (whch is basically the encoder)")
+            print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
+            print("Context vector c:", x)
         else: 
             x = None
         return x
@@ -183,13 +184,16 @@ class DDPM_2D(LightningModule):
         # reorder depth to batch dimension
         assert input.shape[0] == 1, "Batch size must be 1"
         input = input.squeeze(0).permute(3,0,1,2) # [B,C,H,W,D] -> [D,C,H,W]
-
+        #!
         # calc features for guidance
-       
+        print('THE WEIRD CONDITION BIT CALLED "features" in DDPM_2D')
         features = self(input)
+        print('shape features: ', features.shape)
         features_single = features
-
+        #! CONDITION BIT!!!
         if self.cfg.condition:
+            print('additng features to latern space')
+            print('latent space:', latentSpace)
             latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
         else: 
             latentSpace.append(torch.tensor([0],dtype=float).repeat(input.shape[0]))
@@ -207,13 +211,16 @@ class DDPM_2D(LightningModule):
                 reco_ensemble += reco
                 
             reco = reco_ensemble / len(timesteps) # average over timesteps
+            print("reconstruction shape", reco.shape)
+            print("reconstruction", reco)
         else :
             if self.cfg.get('noisetype') is not None:
                 noise = gen_noise(self.cfg, input.shape).to(self.device)
             else: 
                 noise = None
             loss_diff, reco = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
-        
+            print("reconstruction shape", reco.shape)
+            print("reconstruction", reco)
         # calculate loss and Anomalyscores
         AnomalyScoreComb.append(loss_diff.cpu())
         AnomalyScoreReg.append(loss_diff.cpu())
@@ -222,6 +229,8 @@ class DDPM_2D(LightningModule):
         # reassamble the reconstruction volume
         final_volume = reco.clone().squeeze()
         final_volume = final_volume.permute(1,2,0) # to HxWxD
+        print('FINAL VOLUME (DDPM) shape', final_volume.shape)
+        print('FINAL VOLUME', final_volume)
 
        
 
@@ -244,6 +253,8 @@ class DDPM_2D(LightningModule):
 
         final_volume = final_volume.unsqueeze(0)
         final_volume = final_volume.unsqueeze(0)
+        print('unsqueeze final volume shape', final_volume.shape)
+        print('unsqueeze final volume', final_volume)
         # calculate metrics
 
         _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label) # everything that is independent of the model choice

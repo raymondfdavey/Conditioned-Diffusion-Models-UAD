@@ -86,15 +86,21 @@ class Residual(nn.Module):
         self.fn = fn
 
     def forward(self, x, *args, **kwargs):
+        #!
+        print(' iAM IN FORWARD METHOD OF WEIRD "RESIDUAL" class IN cond_DDPM.py')
         return self.fn(x, *args, **kwargs) + x
 
 def Upsample(dim, dim_out = None):
+    #!
+    print(' iAM IN UPSAMPLE THIS WEIRD ATTENTION BLOCK IN cond_DDPM.py')
     return nn.Sequential(
         nn.Upsample(scale_factor = 2, mode = 'nearest'),
         nn.Conv2d(dim, default(dim_out, dim), 3, padding = 1)
     )
 
 def Downsample(dim, dim_out = None):
+    #!
+    print(' iAM IN DOWNSAMPLE THIS WEIRD ATTENTION BLOCK IN cond_DDPM.py')
     return nn.Conv2d(dim, default(dim_out, dim), 4, 2, 1)
 
 class LayerNorm(nn.Module):
@@ -174,6 +180,7 @@ class Block(nn.Module):
 
 class ResnetBlock(nn.Module):
     def __init__(self, dim, dim_out, *, time_emb_dim = None, groups = 8):
+
         super().__init__()
         self.mlp = nn.Sequential(
             nn.SiLU(),
@@ -185,7 +192,8 @@ class ResnetBlock(nn.Module):
         self.res_conv = nn.Conv2d(dim, dim_out, 1) if dim != dim_out else nn.Identity()
 
     def forward(self, x, time_emb = None):
-
+        #!
+        print(' iAM IN THE FORWARD METHOD OF THE WEIRD RESNET BLOCK IN cond_DDPM.py')
         scale_shift = None
         if exists(self.mlp) and exists(time_emb):
             time_emb = self.mlp(time_emb)
@@ -212,6 +220,8 @@ class LinearAttention(nn.Module):
         )
 
     def forward(self, x):
+        #!
+        print(' iAM IN FORWARD METHOD IN THIS WEIRD LINEAR ATTENTION BLOCK IN cond_DDPM.py')
         b, c, h, w = x.shape
         qkv = self.to_qkv(x).chunk(3, dim = 1)
         q, k, v = map(lambda t: rearrange(t, 'b (h c) x y -> b h c (x y)', h = self.heads), qkv)
@@ -236,6 +246,8 @@ class Attention(nn.Module):
         self.to_out = nn.Conv2d(hidden_dim, dim, 1)
 
     def forward(self, x):
+        #!
+        print(' iAM IN FORWARD METHOD IN THIS WEIRD ATTENTION BLOCK IN cond_DDPM.py')
         b, c, h, w = x.shape
         qkv = self.to_qkv(x).chunk(3, dim = 1)
         q, k, v = map(lambda t: rearrange(t, 'b (h c) x y -> b h c (x y)', h = self.heads), qkv)
@@ -550,9 +562,15 @@ class GaussianDiffusion(nn.Module):
             raise ValueError(f'invalid loss type {self.loss_type}')
 
     def p_losses(self, x_start, t, cond = None, noise = None, box=None, scale_patch=1, onlybox=False, mask=None):
+        
+        print('i am in p_losses in guassian which seems to be crucial to everything')
+        print('conditioning vector shape: ', cond.shape)
+        print('conditioning vector: ', cond)
         b, c, h, w = x_start.shape
         noise = default(noise, lambda: torch.randn_like(x_start)) # some noise with zero mean and unit variance
 
+        print('in plosses i am getting a noisy image x')
+        print('x shape: ', x.shape)
         x = self.q_sample(x_start = x_start, t = t, noise = noise) # generate a noisy image from the start image at timestep t
         
         if exists(box): # if box is not None, we only want to denoise the box region
@@ -563,8 +581,10 @@ class GaussianDiffusion(nn.Module):
             for i in range(x.shape[0]):
                 x[i, :, box[i,1]:box[i,3], box[i,0]:box[i,2]] = x_patch[i]
 
-
+        print('getting model out')
         model_out = self.model(x, t, cond = cond) # predict the noise that has been added to x_start or directly predict x_start from the noisy x, conditioned by the timestep t, cond
+        print('model out shape: ', model_out.shape)
+        print('model out: ', model_out)
 
         if self.objective == 'pred_noise': # predict the noise that has been added to x_start
             if exists(box): # if box is not None, we only want to denoise the box region
@@ -602,6 +622,8 @@ class GaussianDiffusion(nn.Module):
             return loss.mean(), unnormalize_to_zero_to_one(model_out)
 
     def forward(self, img, t=None, *args, **kwargs):
+        #! 
+        print('iAM IN THE FORWARD METHOD OF THE WEIRD GUASSIAN IN cond_DDPM.py. I WILL BE CALLING p_losses')
         b, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long() if t is None else (torch.ones([b],device=device)*t).long()
 

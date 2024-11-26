@@ -253,50 +253,50 @@ class ResBlock(TimestepBlock):
 
     def _forward(self, x, emb):
         #! UNET UNET
-        #print("\n=== ResBlock _forward ===")
-        #print(f"Input x shape: {x.shape}")
-        #print(f"Input embedding shape: {emb.shape}")
+        print("\n=== ResBlock _forward ===")
+        print(f"Input x shape: {x.shape}")
+        print(f"Input embedding shape: {emb.shape}")
         
         
         if self.updown:# If this block is doing up/downsampling
             # Split the in_layers into all-but-last and last
-            #print("\nUpdown processing:")
+            print("\nUpdown processing:")
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             
             h = in_rest(x)        # Process through initial layers
-            #print(f"After in_rest shape: {h.shape}")
+            print(f"After in_rest shape: {h.shape}")
             
             h = self.h_upd(h)     # Up/downsample h path
-            #print(f"After h_upd shape: {h.shape}")
+            print(f"After h_upd shape: {h.shape}")
             
             x = self.x_upd(x)     # Up/downsample skip connection
-            #print(f"After x_upd shape: {x.shape}")
+            print(f"After x_upd shape: {x.shape}")
             
             h = in_conv(h)        # Final convolution
-            #print(f"After final conv shape: {h.shape}")
+            print(f"After final conv shape: {h.shape}")
         else:
              # If no up/downsampling, just process through all layers
-            #print("\nRegular processing:")
+            print("\nRegular processing:")
             h = self.in_layers(x)
-            #print(f"After in_layers shape: {h.shape}")
+            print(f"After in_layers shape: {h.shape}")
             
             
         #!
         # This is where embedding gets processed
         emb_out = self.emb_layers(emb)
-        #print("\n=== Embedding Projection ===")
-        #print(f"Projected embedding shape before expansion: {emb_out.shape}")
+        print("\n=== Embedding Projection ===")
+        print(f"Projected embedding shape before expansion: {emb_out.shape}")
         
         while len(emb_out.shape) < len(h.shape):
             emb_out = emb_out[..., None]
-        #print(f"Projected embedding shape after expansion: {emb_out.shape}")
+        print(f"Projected embedding shape after expansion: {emb_out.shape}")
         
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
             scale, shift = th.chunk(emb_out, 2, dim=1)
-            #print("\n=== Scale-Shift Values ===")
-            #print(f"Scale shape: {scale.shape}")
-            #print(f"Shift shape: {shift.shape}")
+            print("\n=== Scale-Shift Values ===")
+            print(f"Scale shape: {scale.shape}")
+            print(f"Shift shape: {shift.shape}")
             h = out_norm(h) * (1 + scale) + shift
             h = out_rest(h)
         else:
@@ -304,8 +304,8 @@ class ResBlock(TimestepBlock):
             h = self.out_layers(h)
             
         final = self.skip_connection(x) + h
-        #print("\n=== ResBlock Output ===")
-        #print(f"Output shape: {final.shape}")
+        print("\n=== ResBlock Output ===")
+        print(f"Output shape: {final.shape}")
         
         return final
 
@@ -748,10 +748,10 @@ class UNetModel(nn.Module):
 
     def forward(self, x, timesteps, cond=None, context=None):
         #! UNET UNET
-        #print("\n=== UNet Forward Pass ===")
-        #print(f"Input shape: {x.shape}")
-        #print(f"Timesteps: {timesteps}")
-        #print(f"Conditioning shape: {cond.shape if cond is not None else None}")
+        print("\n=== UNet Forward Pass ===")
+        print(f"Input shape: {x.shape}")
+        print(f"Timesteps: {timesteps}")
+        print(f"Conditioning shape: {cond.shape if cond is not None else None}")
         
         
         """
@@ -766,43 +766,43 @@ class UNetModel(nn.Module):
             cond = None
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
-        #print("\n=== Time Embedding ===")
-        #print(f"Time embedding shape: {emb.shape}")
-        #print(f"Time embedding stats - mean: {emb.mean().item():.4f}, std: {emb.std().item():.4f}")
+        print("\n=== Time Embedding ===")
+        print(f"Time embedding shape: {emb.shape}")
+        print(f"Time embedding stats - mean: {emb.mean().item():.4f}, std: {emb.std().item():.4f}")
         
  
         
         
         if self.num_classes is not None:
             emb = th.cat([emb, self.label_emb(cond)], 1)
-            #print("\n=== Combined Time+Label Embedding ===")
-            #print(f"Combined embedding shape: {emb.shape}")
+            print("\n=== Combined Time+Label Embedding ===")
+            print(f"Combined embedding shape: {emb.shape}")
 
         h = x
         #! Track all block outputs
-        #print("\n=== Block Outputs ===")
+        print("\n=== Block Outputs ===")
         for i, module in enumerate(self.input_blocks):
             h = module(h, emb, context)
-            #print(f"\nInput Block {i}:")
-            #print(f"Shape: {h.shape}")
-            #print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+            print(f"\nInput Block {i}:")
+            print(f"Shape: {h.shape}")
+            print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
             hs.append(h)
             
-        #print("\nMiddle Block:")
-        #print(f"Shape: {h.shape}")
-        #print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+        print("\nMiddle Block:")
+        print(f"Shape: {h.shape}")
+        print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
         
         h = self.middle_block(h, emb, context)
         for i, module in enumerate(self.output_blocks):
             h = th.cat([h, hs.pop()], dim=1)
             h = module(h, emb, context)
-            #print(f"\nOutput Block {i}:")
-            #print(f"Shape: {h.shape}")
-            #print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+            print(f"\nOutput Block {i}:")
+            print(f"Shape: {h.shape}")
+            print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
         
-        #print("\n=== Final Output ===")
-        #print(f"Shape: {h.shape}")
-        #print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+        print("\n=== Final Output ===")
+        print(f"Shape: {h.shape}")
+        print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
         h = self.out(h)
         return h
 
