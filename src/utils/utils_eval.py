@@ -16,6 +16,9 @@ from PIL import Image
 import matplotlib.colors as colors
 
 def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label_vol) :
+        print('='*10)
+        print('IN _TEST_STEP')
+        print('='*10)
         self.healthy_sets = ['IXI']
         # Resize the images if desired
         if not self.cfg.resizedEvaluation: # in case of full resolution evaluation 
@@ -57,14 +60,17 @@ def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID
 
         # Erode the Brainmask 
         if self.cfg['erodeBrainmask']:
+            print("ERODING BRAIN MASK")
             diff_volume = apply_brainmask_volume(diff_volume.cpu(), data_mask.squeeze().cpu())   
 
         # Filter the DifferenceImage
         if self.cfg['medianFiltering']:
+            print("MEDIAN FILTERING")
             diff_volume = torch.from_numpy(apply_3d_median_filter(diff_volume.numpy().squeeze(),kernelsize=self.cfg.get('kernelsize_median',5))).unsqueeze(0) # bring back to tensor
 
         # save image grid
         if self.cfg['saveOutputImages'] :
+            print("SAVING OUTPUT - ORIGINAL, FINAL, MASK ETC")
             log_images(self,diff_volume, data_orig, data_seg, data_mask, final_volume, ID)
             
         ### Compute Metrics per Volume / Step ###
@@ -188,6 +194,8 @@ def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID
         self.eval_dict['labelPerVol'].append(label_vol.item())
 
 def _test_end(self) :
+        print('IN TEST END')
+
     # average over all test samples
         self.eval_dict['l1recoErrorAllMean'] = np.nanmean(self.eval_dict['l1recoErrorAll'])
         self.eval_dict['l1recoErrorAllStd'] = np.nanstd(self.eval_dict['l1recoErrorAll'])
@@ -287,6 +295,7 @@ def _test_end(self) :
                 self.eval_dict['t_1p'] = self.threshholds_healthy['thresh_1p']
                 self.eval_dict['t_5p'] = self.threshholds_healthy['thresh_5p']
                 self.eval_dict['t_10p'] = self.threshholds_healthy['thresh_10p']
+                
 def calc_thresh(dataset):
     data = dataset['Datamodules_train.Chexpert']
     _, fpr_healthy_comb, _, threshs_healthy_comb = compute_roc(np.array(data['AnomalyScoreCombPerVol']),np.array(data['labelPerVol'])) 
@@ -575,6 +584,8 @@ def normalize(tensor): # THanks DZimmerer
 
 #! SAVES IMAGES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None,  flow=None ):
+    print('SAVING IMAGES!')
+    
     ImagePathList = {
                     'imagesGrid': os.path.join(os.getcwd(),'grid')}
     for key in ImagePathList :

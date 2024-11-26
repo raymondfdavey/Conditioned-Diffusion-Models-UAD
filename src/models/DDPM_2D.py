@@ -16,6 +16,9 @@ from src.models.LDM.modules.diffusionmodules.util import timestep_embedding
 
 class DDPM_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
+        print('='*10)
+        print('INITIALISING DDPM_2D')
+        print('='*10)
         super().__init__()
         
         self.cfg = cfg
@@ -107,6 +110,9 @@ class DDPM_2D(LightningModule):
 
 
     def training_step(self, batch, batch_idx: int):
+        print('='*10)
+        print('IN DDPM TRAINING STEP')
+        print('='*10)
         # process batch
         input = batch['vol'][tio.DATA].squeeze(-1)
 
@@ -126,6 +132,9 @@ class DDPM_2D(LightningModule):
         return {"loss": loss}
     
     def validation_step(self, batch: Any, batch_idx: int):
+        print('='*10)
+        print('IN DDPM VALIDATION STEP')
+        print('='*10)
         input = batch['vol'][tio.DATA].squeeze(-1) 
 
         # calc features for guidance
@@ -143,6 +152,10 @@ class DDPM_2D(LightningModule):
         return {"loss": loss}
 
     def on_test_start(self):
+        print('='*10)
+        print('IN DDPM ON TEST START DDPM2D')
+        print('='*10)
+        
         self.eval_dict = get_eval_dictionary()
         self.inds = []
         self.latentSpace_slice = []
@@ -153,6 +166,10 @@ class DDPM_2D(LightningModule):
             self.threshold = {}
 
     def test_step(self, batch: Any, batch_idx: int):
+        print('='*10)
+        print('IN DDPM ON TEST STEP')
+        print('='*10)
+        
         self.dataset = batch['Dataset']
         input = batch['vol'][tio.DATA]
         data_orig = batch['vol_orig'][tio.DATA]
@@ -253,8 +270,8 @@ class DDPM_2D(LightningModule):
 
         final_volume = final_volume.unsqueeze(0)
         final_volume = final_volume.unsqueeze(0)
-        print('unsqueeze final volume shape', final_volume.shape)
-        print('unsqueeze final volume', final_volume)
+        print('unsqueeze final volume shape (DDPM2d)', final_volume.shape)
+        print('unsqueeze final volume (DDPM 2D)', final_volume)
         # calculate metrics
 
         _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label) # everything that is independent of the model choice

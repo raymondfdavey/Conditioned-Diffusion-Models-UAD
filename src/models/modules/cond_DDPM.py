@@ -305,6 +305,9 @@ class GaussianDiffusion(nn.Module):
         cfg=None,
     ):
         super().__init__()
+        print('='*10)
+        print('INITIALISING GAUSSIAN DIFFUSION')
+        print('='*10)
         if not hasattr(model,'channels'):
             pass
         else: 

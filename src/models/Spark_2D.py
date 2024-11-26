@@ -12,6 +12,9 @@ import torchio as tio
 class Spark_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
         super().__init__()
+        print('='*10)
+        print('INITIALISING SPARK 2D')
+        print('='*10)
         self.cfg = cfg
         # Model 
         self.model = SparK_2D(cfg)

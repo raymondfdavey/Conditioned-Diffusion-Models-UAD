@@ -80,6 +80,9 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
 
     def forward(self, x, emb, context=None):
+        print('in time embed sequential passing on forward method')
+        print('in dims:', x.shape)
+        
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
@@ -87,6 +90,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
                 x = layer(x, context)
             else:
                 x = layer(x)
+        print('out dims:', x.shape)
         return x
 
 
@@ -109,6 +113,8 @@ class Upsample(nn.Module):
             self.conv = conv_nd(dims, self.channels, self.out_channels, 3, padding=1)
 
     def forward(self, x):
+        print('UPSAMPLING!!!!')
+        print('in dims:', x.shape)
         assert x.shape[1] == self.channels
         if self.dims == 3:
             x = F.interpolate(
@@ -118,6 +124,8 @@ class Upsample(nn.Module):
             x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
+        print('out dims:', x.shape)
+            
         return x
 class TransposedUpsample(nn.Module):
     'Learned 2x upsampling without padding'
@@ -129,7 +137,13 @@ class TransposedUpsample(nn.Module):
         self.up = nn.ConvTranspose2d(self.channels,self.out_channels,kernel_size=ks,stride=2)
 
     def forward(self,x):
-        return self.up(x)
+        print(' TRASNPOSED UPSAMPLING!!!!')
+        print('in dims:', x.shape)
+        
+        out = self.up(x)
+        print('in dims:', out.shape)
+        
+        return out
 
 class Downsample(nn.Module):
     """
@@ -156,8 +170,13 @@ class Downsample(nn.Module):
             self.op = avg_pool_nd(dims, kernel_size=stride, stride=stride)
 
     def forward(self, x):
+        print('IN DOWNSAMPLE FORWARD STEP')
+        print('in dims:', x.shape)
         assert x.shape[1] == self.channels
-        return self.op(x)
+        out = self.op(x)
+        print('out dims:', out.shape)
+        
+        return out
 
 
 class ResBlock(TimestepBlock):
@@ -239,6 +258,16 @@ class ResBlock(TimestepBlock):
             )
         else:
             self.skip_connection = conv_nd(dims, channels, self.out_channels, 1)
+        print('INITIALISING RESNET BLOCK!!')
+        print('details!!')
+        print(f'{self.channels}')
+        print(f'{self.emb_channels}')
+        print(f'{self.out_channels}')
+        print(f'{self.in_layers}')
+        print(f'{self.updown}')
+        print(f'{self.emb_layers}')
+        print(f'{self.out_layers}')
+        print(f'{self.skip_connection}')
 
     def forward(self, x, emb):
         """
@@ -247,8 +276,17 @@ class ResBlock(TimestepBlock):
         :param emb: an [N x emb_channels] Tensor of timestep embeddings.
         :return: an [N x C x ...] Tensor of outputs.
         """
+        print('in Unet ResBlock forward method! (it calls the _forward method)')
+        print('x shape', x.shape)
+        print('x', x)
+        print('emb shape', emb.shape)
+        print('emb', emb)
+        
+        out = self._forward
+        
+        print('out dims:', out.shape)
         return checkpoint(
-            self._forward, (x, emb), self.parameters(), self.use_checkpoint
+            out, (x, emb), self.parameters(), self.use_checkpoint
         )
 
     def _forward(self, x, emb):
@@ -347,7 +385,13 @@ class AttentionBlock(nn.Module):
         self.proj_out = zero_module(nn.Conv1d(channels, channels, 1))
         self#.half()
     def forward(self, x):
-        return checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
+        print('in unet attention block!')
+        print('x shape', x.shape)
+        print('x', x)
+        
+        out = self._forward
+        print('out dims', out.shape)
+        return checkpoint(out, (x,), self.parameters(), self.use_checkpoint)
 
     def _forward(self, x):
         b, c, *spatial = x.shape
@@ -502,6 +546,10 @@ class UNetModel(nn.Module):
         num_mem_kv=0
     ):
         super().__init__()
+        print('='*10)
+        print('INITIALISING UNET')
+        print('='*10)
+        
         if use_spatial_transformer:
             assert context_dim is not None, 'Fool!! You forgot to include the dimension of your cross-attention conditioning...'
 
