@@ -404,6 +404,9 @@ class GaussianDiffusion(nn.Module):
         return ModelPrediction(pred_noise, x_start)
 
     def p_mean_variance(self, x, t, clip_denoised: bool, cond = None, cond_scale = 1.):
+        
+        
+        
         preds = self.model_predictions(x, t, cond, cond_scale, clip_denoised)
         x_start = preds.pred_x_start
 

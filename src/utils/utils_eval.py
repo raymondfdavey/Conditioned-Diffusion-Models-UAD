@@ -573,6 +573,7 @@ def normalize(tensor): # THanks DZimmerer
 
     return tens_deta
 
+#! SAVES IMAGES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None,  flow=None ):
     ImagePathList = {
                     'imagesGrid': os.path.join(os.getcwd(),'grid')}

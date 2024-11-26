@@ -97,6 +97,9 @@ class DDPM_2D(LightningModule):
     def forward(self, x): # encode input
         if self.cfg.get('condition',True):
             x = self.encoder(x)
+            #! this is c - the 128 dim encoding of the image that is the basis for c` and c` proj
+            # print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
+            # print("Context vector c:", x)
         else: 
             x = None
         return x
@@ -245,7 +248,18 @@ class DDPM_2D(LightningModule):
 
         _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label) # everything that is independent of the model choice
 
-           
+        #! NEW TESTS BABY
+        
+        # # Visualization: Compare input and output for a specific slice
+        # slice_idx = 50  # Choose the slice you want to visualize (can be dynamic)
+        # visualize_comparison(input, final_volume, slice_idx=slice_idx)
+
+        # # Optional: Visualize the difference
+        # visualize_difference(input, final_volume, slice_idx=slice_idx)
+
+        # # Optional: Visualize a range of slices
+        # visualize_multiple_slices(input, final_volume, slice_range=range(40, 60))
+    
     def on_test_end(self) :
         # calculate metrics
         _test_end(self) # everything that is independent of the model choice 

@@ -14,11 +14,14 @@ defaults:
   - trainer: default.yaml
   - model: DDPM_2D.yaml
   - datamodule: IXI.yaml
+  #!
   - callbacks: 
     - checkpoint.yaml # set this to null if you don't want to use callbacks
   - logger: # set logger here or use command line (e.g. `python run.py logger=wandb`)
     - wandb
     - csv 
+  # - callbacks: null
+  # - logger: null
   - experiment: DDPM.yaml # set experiment here or use command line (e.g. `python run.py experiment=DDPM`) 
   - mode: default.yaml
   # enable color logging
@@ -49,11 +52,17 @@ ignore_warnings: False
 
 # check performance on test set, using the best model achieved during training
 # lightning chooses best model based on metric specified in checkpoint callback
-test_after_training: True
 
-onlyEval: True
-new_wandb_run: True # if we want to reevaluate to a new wandb run 
 checkpoint: 'best' # which checkpoints to load
 
 
-load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08
+new_wandb_run: True # if we want to reevaluate to a new wandb run 
+test_after_training: True
+onlyEval: True
+
+#!
+#t2 win WSL
+# load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08
+
+#t1 win WSL
+load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-25_13-54-17

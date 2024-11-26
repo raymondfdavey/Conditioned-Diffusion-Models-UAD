@@ -28,6 +28,12 @@ log = utils.get_logger(__name__) # init logger
 
 @hydra.main(config_path='configs', config_name='config') # Hydra decorator
 def train(cfg: DictConfig) -> Optional[float]: 
+    print('CONFIGGGG')
+    print(OmegaConf.to_yaml(cfg))  # Outputs the entire config
+    print('END CONFIGGGG')
+    with open("final_config.yaml", "w") as f:
+        f.write(OmegaConf.to_yaml(cfg))
+
     results = {}
 
     # base names for logging
@@ -165,8 +171,9 @@ def train(cfg: DictConfig) -> Optional[float]:
             preds_dict = {'val':{},'test':{}} # a dict for each data set
             
             sets = {
-                    't2':['Datamodules_eval.Brats21','Datamodules_eval.MSLUB','Datamodules_train.IXI'],
-                   }
+                't2': ['Datamodules_eval.Brats21', 'Datamodules_eval.MSLUB', 'Datamodules_train.IXI'],
+                't1': ['Datamodules_eval.Brats21', 'Datamodules_eval.MSLUB', 'Datamodules_train.IXI', 'Datamodules_eval.ATLAS', 'Datamodules_eval.WMH']
+            }
             
 #                   testsets: # specify which test sets to evaluate!
 #   # - Datamodules_eval.Brats21
@@ -187,7 +194,7 @@ def train(cfg: DictConfig) -> Optional[float]:
 
                 ckpt_path=cfg.get('ckpt_path',None)
                 print('!!!!!', ckpt_path)
-
+                #! the trainer.test calls the model test_step function!
                 if 'train' in set:
                     trainer.test(model=model,dataloaders=datamodule.val_eval_dataloader(),ckpt_path=ckpt_path)
                 else: 

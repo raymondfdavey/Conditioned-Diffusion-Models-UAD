@@ -1,0 +1,14 @@
+t1_model=/home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-25_13-54-17/checkpoints/epoch-719_step-8639_loss-0.00_fold-1.ckpt
+
+t1_encoder=/home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt
+
+---------------------------
+
+t2_model=/home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08/checkpoints/epoch-983_step-11807_loss-0.00_fold-1.ckpt
+
+t2_encoder=/home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-19_16-19-51/checkpoints/epoch-932_step-11195_loss-0.00_fold-1.ckpt
+
+
+ python run.py experiment=cDDPM/DDPM_cond_spark_2D datamodule.cfg.mode=t1
+
+
