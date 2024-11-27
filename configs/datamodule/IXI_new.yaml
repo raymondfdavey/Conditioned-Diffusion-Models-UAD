@@ -1,0 +1,36 @@
+_target_: src.datamodules.Datamodules_train.IXI_new
+
+cfg:
+  name: IXI
+  path:
+    pathBase: ${data_dir}
+    IXI:
+      IDs: 
+        test: ${data_dir}/Data/splits/IXI_test.csv
+      keep_t2: ${data_dir}/Data/splits/avail_t2.csv
+
+  # Essential parameters for testing
+  imageDim: [160,192,160] 
+  rescaleFactor: 2
+  interRes: [8,8,5] #[HxWxD]
+  cropMode: 'isotropic'
+  spatialDims: ${model.cfg.spatialDims}
+  unisotropic_sampling: True
+  sample_set: False
+
+  # Data loading settings
+  preLoad: True
+  curvatureFlow: True
+  percentile: True
+  pad: True
+  permute: False
+  
+  # Hardware/processing settings
+  num_workers: 4
+  batch_size: 1  # Changed to 1 since that's what your test_dataloader uses
+  
+  # Evaluation settings
+  mode: t1
+  resizedEvaluation: True
+  testsets:
+  - Datamodules_train.IXI

@@ -80,8 +80,8 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
 
     def forward(self, x, emb, context=None):
-        print('in time embed sequential passing on forward method')
-        print('in dims:', x.shape)
+        # print('in time embed sequential passing on forward method')
+        # print('in dims:', x.shape)
         
         for layer in self:
             if isinstance(layer, TimestepBlock):
@@ -90,7 +90,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
                 x = layer(x, context)
             else:
                 x = layer(x)
-        print('out dims:', x.shape)
+        # print('out dims:', x.shape)
         return x
 
 
@@ -258,16 +258,16 @@ class ResBlock(TimestepBlock):
             )
         else:
             self.skip_connection = conv_nd(dims, channels, self.out_channels, 1)
-        print('INITIALISING RESNET BLOCK!!')
-        print('details!!')
-        print(f'{self.channels}')
-        print(f'{self.emb_channels}')
-        print(f'{self.out_channels}')
-        print(f'{self.in_layers}')
-        print(f'{self.updown}')
-        print(f'{self.emb_layers}')
-        print(f'{self.out_layers}')
-        print(f'{self.skip_connection}')
+        # print('INITIALISING RESNET BLOCK!!')
+        # print('details!!')
+        # print(f'{self.channels}')
+        # print(f'{self.emb_channels}')
+        # print(f'{self.out_channels}')
+        # print(f'{self.in_layers}')
+        # print(f'{self.updown}')
+        # print(f'{self.emb_layers}')
+        # print(f'{self.out_layers}')
+        # print(f'{self.skip_connection}')
 
     def forward(self, x, emb):
         """
@@ -276,65 +276,41 @@ class ResBlock(TimestepBlock):
         :param emb: an [N x emb_channels] Tensor of timestep embeddings.
         :return: an [N x C x ...] Tensor of outputs.
         """
-        print('in Unet ResBlock forward method! (it calls the _forward method)')
-        print('x shape', x.shape)
-        print('x', x)
-        print('emb shape', emb.shape)
-        print('emb', emb)
         
-        out = self._forward
-        
-        print('out dims:', out.shape)
-        return checkpoint(
-            out, (x, emb), self.parameters(), self.use_checkpoint
+        out = checkpoint(
+            self._forward, (x, emb), self.parameters(), self.use_checkpoint
         )
+        
+        return out
 
     def _forward(self, x, emb):
+        
         #! UNET UNET
-        print("\n=== ResBlock _forward ===")
-        print(f"Input x shape: {x.shape}")
-        print(f"Input embedding shape: {emb.shape}")
-        
-        
         if self.updown:# If this block is doing up/downsampling
             # Split the in_layers into all-but-last and last
-            print("\nUpdown processing:")
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
-            
             h = in_rest(x)        # Process through initial layers
-            print(f"After in_rest shape: {h.shape}")
-            
             h = self.h_upd(h)     # Up/downsample h path
-            print(f"After h_upd shape: {h.shape}")
-            
             x = self.x_upd(x)     # Up/downsample skip connection
-            print(f"After x_upd shape: {x.shape}")
-            
             h = in_conv(h)        # Final convolution
-            print(f"After final conv shape: {h.shape}")
         else:
              # If no up/downsampling, just process through all layers
-            print("\nRegular processing:")
-            h = self.in_layers(x)
-            print(f"After in_layers shape: {h.shape}")
-            
+            h = self.in_layers(x)            
             
         #!
         # This is where embedding gets processed
         emb_out = self.emb_layers(emb)
-        print("\n=== Embedding Projection ===")
-        print(f"Projected embedding shape before expansion: {emb_out.shape}")
-        
+        # print("Raw embedding entering ResBlock:", emb.shape)
+        print("Projected embedding:", emb_out.shape)
+
         while len(emb_out.shape) < len(h.shape):
             emb_out = emb_out[..., None]
-        print(f"Projected embedding shape after expansion: {emb_out.shape}")
         
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
             scale, shift = th.chunk(emb_out, 2, dim=1)
-            print("\n=== Scale-Shift Values ===")
-            print(f"Scale shape: {scale.shape}")
-            print(f"Shift shape: {shift.shape}")
+            # print("Scale factors:", scale.shape)
+            # print("Shift factors:", shift.shape)
             h = out_norm(h) * (1 + scale) + shift
             h = out_rest(h)
         else:
@@ -342,8 +318,6 @@ class ResBlock(TimestepBlock):
             h = self.out_layers(h)
             
         final = self.skip_connection(x) + h
-        print("\n=== ResBlock Output ===")
-        print(f"Output shape: {final.shape}")
         
         return final
 
@@ -387,11 +361,11 @@ class AttentionBlock(nn.Module):
     def forward(self, x):
         print('in unet attention block!')
         print('x shape', x.shape)
-        print('x', x)
+        # print('x', x)
         
-        out = self._forward
+        out = checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
         print('out dims', out.shape)
-        return checkpoint(out, (x,), self.parameters(), self.use_checkpoint)
+        return out
 
     def _forward(self, x):
         b, c, *spatial = x.shape
@@ -549,7 +523,10 @@ class UNetModel(nn.Module):
         print('='*10)
         print('INITIALISING UNET')
         print('='*10)
-        
+
+        for key, value in locals().items():
+            if key != 'self':  # Exclude 'self' from printing
+                print(f"{key}: {value}")
         if use_spatial_transformer:
             assert context_dim is not None, 'Fool!! You forgot to include the dimension of your cross-attention conditioning...'
 
@@ -578,6 +555,8 @@ class UNetModel(nn.Module):
         self.num_head_channels = num_head_channels
         self.num_heads_upsample = num_heads_upsample
         self.num_mem_kv=num_mem_kv
+        
+        
         if self.num_classes is not None:
             fac = 2
             time_embed_dim = model_channels * 4 * fac
@@ -590,6 +569,9 @@ class UNetModel(nn.Module):
             fac = 1
             time_embed_dim = model_channels * 4 * fac
         
+        print('='*10)
+        print('making time_embed layer')
+        print('='*10)
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim//fac),
             nn.SiLU(),
@@ -609,8 +591,10 @@ class UNetModel(nn.Module):
         input_block_chans = [model_channels]
         ch = model_channels
         ds = 1
+
         for level, mult in enumerate(channel_mult):
-            for _ in range(num_res_blocks):
+            for resb in range(num_res_blocks):
+                print(f'{resb=}')
                 layers = [
                     ResBlock(
                         ch,
@@ -643,6 +627,7 @@ class UNetModel(nn.Module):
                             ch, num_heads, dim_head, depth=transformer_depth, context_dim=context_dim, num_mem_kv=self.num_mem_kv
                         )
                     )
+                
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
                 self._feature_size += ch
                 input_block_chans.append(ch)
@@ -670,7 +655,6 @@ class UNetModel(nn.Module):
                 input_block_chans.append(ch)
                 ds *= 2
                 self._feature_size += ch
-
         if num_head_channels == -1:
             dim_head = ch // num_heads
         else:
@@ -707,7 +691,7 @@ class UNetModel(nn.Module):
             ),
         )
         self._feature_size += ch
-
+        
         self.output_blocks = nn.ModuleList([])
         for level, mult in list(enumerate(channel_mult))[::-1]:
             for i in range(num_res_blocks + 1):
@@ -769,7 +753,7 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
         )
-
+        
     def convert_to_fp16(self):
         """
         Convert the torso of the model to float16.
@@ -795,13 +779,7 @@ class UNetModel(nn.Module):
         return self.forward(*args,**kwargs)
 
     def forward(self, x, timesteps, cond=None, context=None):
-        #! UNET UNET
-        print("\n=== UNet Forward Pass ===")
-        print(f"Input shape: {x.shape}")
-        print(f"Timesteps: {timesteps}")
-        print(f"Conditioning shape: {cond.shape if cond is not None else None}")
-        
-        
+        print("Initial input shape:", x.shape)
         """
         Apply the model to an input batch.
         :param x: an [N x C x ...] Tensor of inputs.
@@ -814,45 +792,45 @@ class UNetModel(nn.Module):
             cond = None
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
-        print("\n=== Time Embedding ===")
-        print(f"Time embedding shape: {emb.shape}")
-        print(f"Time embedding stats - mean: {emb.mean().item():.4f}, std: {emb.std().item():.4f}")
-        
- 
-        
         
         if self.num_classes is not None:
             emb = th.cat([emb, self.label_emb(cond)], 1)
-            print("\n=== Combined Time+Label Embedding ===")
-            print(f"Combined embedding shape: {emb.shape}")
 
         h = x
         #! Track all block outputs
-        print("\n=== Block Outputs ===")
+        
+        print('\ninputblocks')
         for i, module in enumerate(self.input_blocks):
+            print(f"Before block {i}, shape:", h.shape)
             h = module(h, emb, context)
-            print(f"\nInput Block {i}:")
-            print(f"Shape: {h.shape}")
-            print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
             hs.append(h)
-            
-        print("\nMiddle Block:")
-        print(f"Shape: {h.shape}")
-        print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+            print(f"After block {i}, shape:", h.shape)
+            print('-')
         
+        print(f"\nBefore middle block, shape:", h.shape)
         h = self.middle_block(h, emb, context)
-        for i, module in enumerate(self.output_blocks):
-            h = th.cat([h, hs.pop()], dim=1)
-            h = module(h, emb, context)
-            print(f"\nOutput Block {i}:")
-            print(f"Shape: {h.shape}")
-            print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
+        print('\n')
+        print("After middle block, shape:", h.shape)
+        print('-')
         
-        print("\n=== Final Output ===")
-        print(f"Shape: {h.shape}")
-        print(f"Stats - mean: {h.mean().item():.4f}, std: {h.std().item():.4f}")
-        h = self.out(h)
-        return h
+        print('\n')
+        
+        print('\noutputblocks')
+        for i, module in enumerate(self.output_blocks):
+            print(f"Before block {i}, shape:", h.shape)
+            h = th.cat([h, hs.pop()], dim=1)
+            print(f"After concatenation in upsampling block {i}, shape:", h.shape)
+            h = module(h, emb, context)
+            print(f"After block {i}, shape:", h.shape)
+            print('-')
+            
+
+        # Final output
+        
+        print("\nBefore Final layer shape:", h.shape)
+        final = self.out(h)
+        print("Final output shape:", final.shape)
+        return final
 
 
 class SuperResModel(UNetModel):

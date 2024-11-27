@@ -186,9 +186,11 @@ def get_yaml(path): # read yaml
     return file
 
 def get_checkpoint(cfg, path): 
+    
     checkpoint_path = path
     checkpoint_to_load = cfg.get("checkpoint",'last') # default to last.ckpt 
     print('---------------')
+    print(f'GETTING CHECKPOINT from {path} !!!!!!!!!!!!!!!!!!')
     print(path)
     print(checkpoint_to_load)
     

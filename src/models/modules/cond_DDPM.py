@@ -568,13 +568,13 @@ class GaussianDiffusion(nn.Module):
         
         print('i am in p_losses in guassian which seems to be crucial to everything')
         print('conditioning vector shape: ', cond.shape)
-        print('conditioning vector: ', cond)
+        # print('conditioning vector: ', cond)
         b, c, h, w = x_start.shape
         noise = default(noise, lambda: torch.randn_like(x_start)) # some noise with zero mean and unit variance
 
+        x = self.q_sample(x_start = x_start, t = t, noise = noise) # generate a noisy image from the start image at timestep t
         print('in plosses i am getting a noisy image x')
         print('x shape: ', x.shape)
-        x = self.q_sample(x_start = x_start, t = t, noise = noise) # generate a noisy image from the start image at timestep t
         
         if exists(box): # if box is not None, we only want to denoise the box region
             x_patch = []
@@ -587,7 +587,7 @@ class GaussianDiffusion(nn.Module):
         print('getting model out')
         model_out = self.model(x, t, cond = cond) # predict the noise that has been added to x_start or directly predict x_start from the noisy x, conditioned by the timestep t, cond
         print('model out shape: ', model_out.shape)
-        print('model out: ', model_out)
+        # print('model out: ', model_out)
 
         if self.objective == 'pred_noise': # predict the noise that has been added to x_start
             if exists(box): # if box is not None, we only want to denoise the box region

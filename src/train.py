@@ -28,9 +28,11 @@ log = utils.get_logger(__name__) # init logger
 
 @hydra.main(config_path='configs', config_name='config') # Hydra decorator
 def train(cfg: DictConfig) -> Optional[float]: 
+    
     print('CONFIGGGG')
     print(OmegaConf.to_yaml(cfg))  # Outputs the entire config
     print('END CONFIGGGG')
+    
     with open("final_config.yaml", "w") as f:
         f.write(OmegaConf.to_yaml(cfg))
 
@@ -41,7 +43,9 @@ def train(cfg: DictConfig) -> Optional[float]:
     if 'early_stop' in cfg.callbacks:
         base_es = cfg.callbacks.early_stop.monitor # early stop base metric
     print(cfg.get('load_checkpoint'))
-    # load checkpoint if specified
+    
+    
+    #! get checkpoints if specified
     if cfg.get('load_checkpoint')  and (cfg.get('onlyEval') or cfg.get('resume_train')): # load stored checkpoint for testing or resuming training
         wandbID, checkpoints = utils.get_checkpoint(cfg, cfg.get('load_checkpoint')) # outputs a Dictionary of checkpoints and the corresponding wandb ID to resume the run 
         if cfg.get('new_wandb_run',False): # If we want to onlyEvaluate a run in a new wandb run
@@ -68,23 +72,30 @@ def train(cfg: DictConfig) -> Optional[float]:
     end_fold = cfg.get('num_folds',5)
     if start_fold != 0:
         log.info(f'skipping the first {start_fold} fold(s)') 
+        
     print(start_fold)
     print(end_fold)
+    
+    
     # iterate over folds from start_fold to num_fold
     for fold in range(start_fold,end_fold): # iterate over folds 
         
         log.info(f"Training Fold {fold+1} of {end_fold} in the WandB group {cfg.logger.wandb.group}")
         prefix = f'{fold+1}/' # naming of logs
 
-
-        cfg.datamodule._target_ = f'src.datamodules.Datamodules_train.{cfg.datamodule.cfg.name}' # set datamodule target
+        #! INITIALISE is Datamodules_train.IXI
+        cfg.datamodule._target_ = f'src.datamodules.Datamodules_train.{cfg.datamodule.cfg.name}' # set datamodule target (IXI)
         log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>") 
         datamodule_train: LightningDataModule = hydra.utils.instantiate(cfg.datamodule,fold=fold) # instantiate datamodule
 
         # Init lightning model
+        #! INTIALISE DDPM_2D MODEL
+        #! IN TURN INITIALISED SPARK -> UNET -> DIFFUSION
+        #! instantialsed DDPM_2D which in turn initialised the encoder and the Unet and the diffusion
         log.info(f"Instantiating model <{cfg.model._target_}>")
         print('MAKING THE ACTUAL MODEL HERE INCLUDING LOADING THE PRETRAINED ENCODER')
         model: LightningModule = hydra.utils.instantiate(cfg.model,prefix=prefix) # instantiate model
+
 
         # setup callbacks
         cfg.callbacks.model_checkpoint.monitor = f'{prefix}' + base # naming of logs for cross validation
@@ -113,7 +124,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                     log.info(f"Instantiating logger <{lg_conf._target_}>")
                     logger.append(hydra.utils.instantiate(lg_conf))
 
-        # Load checkpoint if specified
+        #! Load checkpoint if specified
         if cfg.get('load_checkpoint') and (cfg.get('onlyEval',False) or cfg.get('resume_train',False) ): # pass checkpoint to resume from
             with open_dict(cfg):
                 cfg.trainer.resume_from_checkpoint = checkpoints[f"fold-{fold+1}"]
@@ -139,10 +150,11 @@ def train(cfg: DictConfig) -> Optional[float]:
             logger=logger,
         )
 
-
+        #! train if needed
         if (not cfg.get('onlyEval',False) or cfg.get('resume_train',False)) : # train model
             trainer.fit(model, datamodule_train)
             validation_metrics = trainer.callback_metrics
+        #! other wise dont
         else: # load trained model
             print('loading model from checkpoint')
             model.load_state_dict(torch.load(checkpoints[f'fold-{fold+1}'])['state_dict'])

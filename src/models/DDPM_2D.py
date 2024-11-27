@@ -16,6 +16,7 @@ from src.models.LDM.modules.diffusionmodules.util import timestep_embedding
 
 class DDPM_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
+        #! IN DDPM
         print('='*10)
         print('INITIALISING DDPM_2D')
         print('='*10)
@@ -23,16 +24,16 @@ class DDPM_2D(LightningModule):
         
         self.cfg = cfg
         
-        # conditioning net
+        #! INITIALISES conditioning net
         if cfg.get('condition',True):
             with open_dict(self.cfg):
                 self.cfg['cond_dim'] = cfg.get('unet_dim',64) * 4
 
             self.encoder, out_features = get_encoder(cfg)
+            print('encoder out features:', out_features)
         else: 
             out_features = None
-
-
+        #! INITIALISED UNET
         model = OpenAI_UNet(
                             image_size =  (int(cfg.imageDim[0] / cfg.rescaleFactor),int(cfg.imageDim[1] / cfg.rescaleFactor)),
                             in_channels = 1,
@@ -62,6 +63,7 @@ class DDPM_2D(LightningModule):
         sampling_timesteps = cfg.get('sampling_timesteps',timesteps)
         self.test_timesteps = cfg.get('test_timesteps',150) 
 
+        #! INITIALISES GUASSIAN DIFFUSION WHICH USES UNET
         self.diffusion = GaussianDiffusion(
         model,
         image_size = (int(cfg.imageDim[0] / cfg.rescaleFactor),int(cfg.imageDim[1] / cfg.rescaleFactor)), # only important when sampling
@@ -103,7 +105,7 @@ class DDPM_2D(LightningModule):
             #! this is c - the 128 dim encoding of the image that is the basis for c` and c` proj
             print("i'm i DDPM2d forward block (whch is basically the encoder)")
             print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
-            print("Context vector c:", x)
+            # print("Context vector c:", x)
         else: 
             x = None
         return x
