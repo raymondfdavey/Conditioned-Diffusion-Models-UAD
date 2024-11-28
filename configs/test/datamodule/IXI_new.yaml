@@ -1,0 +1,55 @@
+_target_: src.datamodules.new_IXI.IXI_new
+
+cfg:
+  name: IXI
+  path:
+    # Base directory for data - this is a variable that will be substituted
+    pathBase: ${data_dir}
+    
+    # IXI dataset specific paths
+    IXI:
+      IDs:
+        # Only need test path since this datamodule only handles testing
+        test: ${data_dir}/Data/splits/IXI_test.csv
+
+  imageDim: [192,192,160] 
+  rescaleFactor: 2
+  interRes: [8,8,5] #[HxWxD]
+  cropMode: 'isotropic'
+  spatialDims: ${model.cfg.spatialDims}
+  unisotropic_sampling: True
+  sample_set: False
+  
+  # Processing flags
+  resizedEvaluation: True  # Whether to resize during evaluation
+  unisotropic_sampling: True  # Allow non-uniform sampling
+  
+  # DataLoader parameters
+  num_workers: 4  # Number of parallel workers
+  
+  # Additional processing flags
+  curvatureFlow: True  # Apply curvature flow preprocessing
+  percentile: True  # Use percentile-based intensity normalization
+  pad: True  # Allow padding to match dimensions
+
+
+
+  # configs/test/datamodule/IXI_new.yaml
+_target_: src.datamodules.new_IXI.IXI_new
+
+cfg:
+  name: IXI
+  path:
+    pathBase: ${data_dir}
+    IXI:
+      IDs:
+        test: ${data_dir}/Data/splits/IXI_test.csv
+
+  # Processing parameters
+  imageDim: ${model.cfg.imageDim}
+  rescaleFactor: ${model.cfg.rescaleFactor}
+  resizedEvaluation: true
+  unisotropic_sampling: true
+  
+  # DataLoader settings
+  num_workers: 4

@@ -4,6 +4,13 @@ import src.datamodules.create_dataset as create_dataset
 from typing import Optional
 import pandas as pd
 import os
+from torch.utils.data import Dataset
+import numpy as np
+import torch
+import SimpleITK as sitk
+import torchio as tio
+sitk.ProcessObject.SetGlobalDefaultThreader("Platform")
+from multiprocessing import Manager
 
 class IXI_new(LightningDataModule):
     def __init__(self, cfg):
@@ -26,16 +33,77 @@ class IXI_new(LightningDataModule):
         self.csv['test']['mask_path'] = self.csv['test']['mask_path'].apply(lambda x: os.path.join(cfg.path.pathBase, 'Data', x.lstrip('/')))
 
     def setup(self,):
-        # called on every GPU
-        if not hasattr(self,'train'):
-            if self.cfg.sample_set: # for debugging
-                self.test_eval = create_dataset.Eval(self.csv['test'][0:8],self.cfg)
-            else: 
-                self.test_eval = create_dataset.Eval(self.csv['test'],self.cfg)
+        self.test_eval = new_eval(self.csv['test'],self.cfg)
     
     def test_dataloader(self):
         return DataLoader(self.test_eval, batch_size=1, num_workers=self.cfg.num_workers, pin_memory=True, shuffle=False)
-      
+
+
+
+def new_eval(csv,cfg): 
+    subjects = []
+
+    for idx, sub in csv.iterrows():
+        if sub.mask_path is not None and tio.ScalarImage(sub.img_path,reader=sitk_reader).shape != tio.ScalarImage(sub.mask_path,reader=sitk_reader).shape:
+            print(f'different shapes of vol and mask detected. Shape vol: {tio.ScalarImage(sub.img_path,reader=sitk_reader).shape}, shape mask: {tio.ScalarImage(sub.mask_path,reader=sitk_reader).shape} \nsamples will be resampled to the same dimension')
+        subject_dict = {
+            'vol' : tio.ScalarImage(sub.img_path,reader=sitk_reader),
+            'vol_orig' : tio.ScalarImage(sub.img_path,reader=sitk_reader), # we need the image in original size for evaluation
+            'age' : sub.age,
+            'ID' : sub.img_name,
+            'label' : sub.label,
+            'Dataset' : sub.setname,
+            'stage' : sub.settype,
+            'seg_available': False,
+            'path' : sub.img_path }
+        if sub.seg_path != None: # if we have segmentations
+            subject_dict['seg'] = tio.LabelMap(sub.seg_path,reader=sitk_reader),
+            subject_dict['seg_orig'] = tio.LabelMap(sub.seg_path,reader=sitk_reader)# we need the image in original size for evaluation
+            subject_dict['seg_available'] = True
+        if sub.mask_path != None: # if we have masks
+            subject_dict['mask'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)
+            subject_dict['mask_orig'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)# we need the image in original size for evaluation
+        else: 
+            tens=tio.ScalarImage(sub.img_path,reader=sitk_reader).data>0
+            subject_dict['mask'] = tio.LabelMap(tensor=tens)
+            subject_dict['mask_orig'] = tio.LabelMap(tensor=tens)
+        subject = tio.Subject(subject_dict)
+        subjects.append(subject)
+    ds = tio.SubjectsDataset(subjects, transform = get_transform(cfg))
+    return ds
+
+
+def get_transform(cfg): # only transforms that are applied once before preloading
+    h, w, d = tuple(cfg.get('imageDim',(160,192,160)))
+
+    if not cfg.resizedEvaluation: 
+        exclude_from_resampling = ['vol_orig','mask_orig','seg_orig']
+    else: 
+        exclude_from_resampling = None
+        
+    if cfg.get('unisotropic_sampling',True):
+        preprocess = tio.Compose([
+        tio.CropOrPad((h,w,d),padding_mode=0),
+        tio.RescaleIntensity((0, 1),percentiles=(cfg.get('perc_low',1),cfg.get('perc_high',99)),masking_method='mask'),
+        tio.Resample(cfg.get('rescaleFactor',3.0),image_interpolation='bspline',exclude=exclude_from_resampling),#,exclude=['vol_orig','mask_orig','seg_orig']), # we do not want to resize *_orig volumes
+        ])
+
+    else: 
+        preprocess = tio.Compose([
+                tio.RescaleIntensity((0, 1),percentiles=(cfg.get('perc_low',1),cfg.get('perc_high',99)),masking_method='mask'),
+                tio.Resample(cfg.get('rescaleFactor',3.0),image_interpolation='bspline',exclude=exclude_from_resampling),#,exclude=['vol_orig','mask_orig','seg_orig']), # we do not want to resize *_orig volumes
+            ])
+
+
+    return preprocess 
+
+def sitk_reader(path):
+                
+    image_nii = sitk.ReadImage(str(path), sitk.sitkFloat32)
+    if not 'mask' in str(path) and not 'seg' in str(path) : # only for volumes / scalar images
+        image_nii = sitk.CurvatureFlow(image1 = image_nii, timeStep = 0.125, numberOfIterations = 3)
+    vol = sitk.GetArrayFromImage(image_nii).transpose(2,1,0)
+    return vol, None
 '''
 The return of this: self.test_eval = create_dataset.Eval(self.csv['test'],self.cfg)
 

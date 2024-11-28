@@ -22,6 +22,7 @@ log = utils.get_logger(__name__)
 
 @hydra.main(config_path='configs', config_name='config')
 def test(cfg: DictConfig) -> None:
+    
     # Initialize the logger for WandB
     cfg.logger.wandb.group = cfg.name  # Specify group name in WandB
     

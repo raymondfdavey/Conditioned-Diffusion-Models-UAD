@@ -412,6 +412,7 @@ class GaussianDiffusion(nn.Module):
             pred_noise = model_output
             x_start = self.predict_start_from_noise(x, t, model_output)
             x_start = maybe_clip(x_start)
+        #! THIS ONE IS WHAT HAPPENS PREDICT IMAGE START
         elif self.objective == 'pred_x0':
             pred_noise = self.predict_noise_from_start(x, t, model_output)
             x_start = model_output
@@ -419,9 +420,6 @@ class GaussianDiffusion(nn.Module):
         return ModelPrediction(pred_noise, x_start)
 
     def p_mean_variance(self, x, t, clip_denoised: bool, cond = None, cond_scale = 1.):
-        
-        
-        
         preds = self.model_predictions(x, t, cond, cond_scale, clip_denoised)
         x_start = preds.pred_x_start
 
@@ -566,13 +564,34 @@ class GaussianDiffusion(nn.Module):
 
     def p_losses(self, x_start, t, cond = None, noise = None, box=None, scale_patch=1, onlybox=False, mask=None):
         
+        other_info = {}
+        other_info['timestep'] = t
+        other_info['prediction_mode'] = self.objective
+        other_info['x_start'] = {
+            'tensor': x_start,
+            'shape': tuple(x_start.shape), 
+            }
+
         print('i am in p_losses in guassian which seems to be crucial to everything')
         print('conditioning vector shape: ', cond.shape)
         # print('conditioning vector: ', cond)
         b, c, h, w = x_start.shape
         noise = default(noise, lambda: torch.randn_like(x_start)) # some noise with zero mean and unit variance
 
+        other_info['generated_random_noise'] = {
+            'tensor': noise,
+            'shape': tuple(noise.shape), 
+            }
+
+
         x = self.q_sample(x_start = x_start, t = t, noise = noise) # generate a noisy image from the start image at timestep t
+        
+        
+        other_info['noised_image'] = {
+            'tensor': x,
+            'shape': tuple(x.shape), 
+            }
+        
         print('in plosses i am getting a noisy image x')
         print('x shape: ', x.shape)
         
@@ -585,10 +604,17 @@ class GaussianDiffusion(nn.Module):
                 x[i, :, box[i,1]:box[i,3], box[i,0]:box[i,2]] = x_patch[i]
 
         print('getting model out')
-        model_out = self.model(x, t, cond = cond) # predict the noise that has been added to x_start or directly predict x_start from the noisy x, conditioned by the timestep t, cond
+        #! ACTUAL MODEL CALL
+        model_out, unet_info = self.model(x, t, cond = cond) # predict the noise that has been added to x_start or directly predict x_start from the noisy x, conditioned by the timestep t, cond
         print('model out shape: ', model_out.shape)
         # print('model out: ', model_out)
-
+        
+        combined_info = {**other_info, **unet_info} 
+        combined_info['model_out'] = {
+            'tensor': model_out,
+            'shape': tuple(model_out.shape)
+        }
+        
         if self.objective == 'pred_noise': # predict the noise that has been added to x_start
             if exists(box): # if box is not None, we only want to denoise the box region
                 noise_patch = torch.zeros_like(noise)
@@ -597,7 +623,7 @@ class GaussianDiffusion(nn.Module):
                 target = noise_patch
             else :
                 target = noise
-
+        #! THIS ONE THIS ONE
         elif self.objective == 'pred_x0': # directly predict x_start from the noisy image x
             if mask is not None: # only focus on the region of the image that contains brain. Default is None
                 model_out = model_out * mask
@@ -620,9 +646,9 @@ class GaussianDiffusion(nn.Module):
 
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         if self.objective == 'pred_noise':
-            return loss.mean(), unnormalize_to_zero_to_one(x - extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * model_out) 
+            return loss.mean(), unnormalize_to_zero_to_one(x - extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * model_out), unet_info 
         else:
-            return loss.mean(), unnormalize_to_zero_to_one(model_out)
+            return loss.mean(), unnormalize_to_zero_to_one(model_out), unet_info
 
     def forward(self, img, t=None, *args, **kwargs):
         #! 
@@ -631,5 +657,6 @@ class GaussianDiffusion(nn.Module):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long() if t is None else (torch.ones([b],device=device)*t).long()
 
         img = normalize_to_neg_one_to_one(img)
+        
         return self.p_losses(img, t, *args, **kwargs)
 

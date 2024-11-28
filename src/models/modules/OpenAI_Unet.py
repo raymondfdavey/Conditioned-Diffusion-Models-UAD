@@ -207,6 +207,10 @@ class ResBlock(TimestepBlock):
         use_checkpoint=False,
         up=False,
         down=False,
+        collector=None,
+        level=None,
+        block=None,
+        section=None
     ):
         super().__init__()
         self.channels = channels
@@ -216,6 +220,10 @@ class ResBlock(TimestepBlock):
         self.use_conv = use_conv
         self.use_checkpoint = use_checkpoint
         self.use_scale_shift_norm = use_scale_shift_norm
+        self.collector = collector
+        self.level = level
+        self.block = block  # Block index for identification
+        self.section = section
 
         self.in_layers = nn.Sequential(
             normalization(channels),
@@ -258,16 +266,6 @@ class ResBlock(TimestepBlock):
             )
         else:
             self.skip_connection = conv_nd(dims, channels, self.out_channels, 1)
-        # print('INITIALISING RESNET BLOCK!!')
-        # print('details!!')
-        # print(f'{self.channels}')
-        # print(f'{self.emb_channels}')
-        # print(f'{self.out_channels}')
-        # print(f'{self.in_layers}')
-        # print(f'{self.updown}')
-        # print(f'{self.emb_layers}')
-        # print(f'{self.out_layers}')
-        # print(f'{self.skip_connection}')
 
     def forward(self, x, emb):
         """
@@ -302,6 +300,24 @@ class ResBlock(TimestepBlock):
         emb_out = self.emb_layers(emb)
         # print("Raw embedding entering ResBlock:", emb.shape)
         print("Projected embedding:", emb_out.shape)
+
+                # Add emb_out to the collector with metadata, structured like the other features
+        if self.collector is not None:
+            self.collector[f'projected_embedding_level_{self.level}_block_{self.block}'] = {
+                'tensor': emb_out.clone(),  # Clone to avoid inplace modification
+                'shape': tuple(emb_out.shape),
+                'block_type': 'ResBlock',
+                'stage': 'embedding_projection',
+                'level': self.level,
+                'block_idx': self.block,
+                'resolution': emb_out.shape[-1],  # Assuming spatial dimension is last
+                'channels': emb_out.shape[1],
+            }
+
+
+
+
+
 
         while len(emb_out.shape) < len(h.shape):
             emb_out = emb_out[..., None]
@@ -370,8 +386,10 @@ class AttentionBlock(nn.Module):
     def _forward(self, x):
         b, c, *spatial = x.shape
         x = x.reshape(b, c, -1)
+        print('ATTENTION GUTS SHAPE1', x.shape)
         qkv = self.qkv(self.norm(x))
         h = self.attention(qkv)
+        print('ATTENTION GUTS SHAPE2', h.shape)
         h = self.proj_out(h)
         return (x + h).reshape(b, c, *spatial)
 
@@ -523,7 +541,12 @@ class UNetModel(nn.Module):
         print('='*10)
         print('INITIALISING UNET')
         print('='*10)
-
+        
+        print('*'*50)
+        print('INITIALISING FEATURES')
+        print('*'*50)
+        self.features_info = {}
+        
         for key, value in locals().items():
             if key != 'self':  # Exclude 'self' from printing
                 print(f"{key}: {value}")
@@ -604,6 +627,10 @@ class UNetModel(nn.Module):
                         dims=dims,
                         use_checkpoint=use_checkpoint,
                         use_scale_shift_norm=use_scale_shift_norm,
+                        collector=self.features_info,  # Pass the collector
+                        level=level,  # Include level metadata
+                        block=resb,  # Include block metadata
+                        section='down'
                     )
                 ]
                 ch = int(mult * model_channels)
@@ -644,6 +671,9 @@ class UNetModel(nn.Module):
                             use_checkpoint=use_checkpoint,
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
+                            collector=self.features_info,  # Pass the collector
+                            level=level,
+                            section='down'
                         )
                         if resblock_updown
                         else Downsample(
@@ -671,6 +701,8 @@ class UNetModel(nn.Module):
                 dims=dims,
                 use_checkpoint=use_checkpoint,
                 use_scale_shift_norm=use_scale_shift_norm,
+                collector=self.features_info,  # Pass the collector
+                section='middle-pre-attention'
             ),
             AttentionBlock(
                 ch,
@@ -688,6 +720,8 @@ class UNetModel(nn.Module):
                 dims=dims,
                 use_checkpoint=use_checkpoint,
                 use_scale_shift_norm=use_scale_shift_norm,
+                collector=self.features_info,  # Pass the collector
+                section='middle-post-attention'
             ),
         )
         self._feature_size += ch
@@ -705,6 +739,10 @@ class UNetModel(nn.Module):
                         dims=dims,
                         use_checkpoint=use_checkpoint,
                         use_scale_shift_norm=use_scale_shift_norm,
+                                                collector=self.features_info,  # Pass the collector
+                        level=level,  # Include level metadata
+                        block=i,  # Include block metadata
+                        section='up'
                     )
                 ]
                 ch = int(model_channels * mult)
@@ -740,6 +778,10 @@ class UNetModel(nn.Module):
                             use_checkpoint=use_checkpoint,
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
+                            collector=self.features_info,  # Pass the collector
+                            level=level,  # Include level metadata
+                            block=i,  # Include level metadata
+                            section='transition out'
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims, out_channels=out_ch)
@@ -788,6 +830,19 @@ class UNetModel(nn.Module):
         :param context: conditioning plugged in via crossattn
         :return: an [N x C x ...] Tensor of outputs.
         """
+        self.features_info.clear()
+        
+        features_info = {
+            'input': {
+                'tensor': x,
+                'shape': tuple(x.shape),
+                'block_type': 'input',
+                'stage': 'input',
+                'resolution': x.shape[-1],
+                'channels': x.shape[1]
+            }
+        }
+
         if self.num_classes is None and cond is not None:
             cond = None
         hs = []
@@ -796,19 +851,77 @@ class UNetModel(nn.Module):
         if self.num_classes is not None:
             emb = th.cat([emb, self.label_emb(cond)], 1)
 
+        embedding_info = {
+            'tensor': emb.clone(),
+            'shape': tuple(emb.shape),
+            'stage': 'all_stages',
+            'resolution': emb.shape[-1],
+            'channels': emb.shape[1],
+        }
+        features_info[f'raw_embedding'] = embedding_info
+            
         h = x
         #! Track all block outputs
         
         print('\ninputblocks')
         for i, module in enumerate(self.input_blocks):
+            # Before processing
+            block_info = {
+                'tensor': h.clone(),
+                'shape': tuple(h.shape),
+                'block_type': type(module).__name__,
+                'stage': 'down',
+                'block_idx': i,
+                'resolution': h.shape[-1],
+                'channels': h.shape[1],
+                'is_downsample': isinstance(module[0], (Downsample, ResBlock)) and hasattr(module[0], 'down') and module[0].down
+            }
+            features_info[f'down_pre_{i}'] = block_info
+            
+            
             print(f"Before block {i}, shape:", h.shape)
             h = module(h, emb, context)
             hs.append(h)
             print(f"After block {i}, shape:", h.shape)
+            
+            # After processing
+            block_info = {
+                'tensor': h.clone(),
+                'shape': tuple(h.shape),
+                'block_type': type(module).__name__,
+                'stage': 'down',
+                'block_idx': i,
+                'resolution': h.shape[-1],
+                'channels': h.shape[1],
+                'is_downsample': isinstance(module[0], (Downsample, ResBlock)) and hasattr(module[0], 'down') and module[0].down
+            }
+            features_info[f'down_post_{i}'] = block_info
             print('-')
         
         print(f"\nBefore middle block, shape:", h.shape)
+        # Middle block
+        middle_pre = {
+            'tensor': h.clone(),
+            'shape': tuple(h.shape),
+            'block_type': 'middle_block',
+            'stage': 'middle',
+            'resolution': h.shape[-1],
+            'channels': h.shape[1]
+        }
+        features_info['middle_pre'] = middle_pre
+        
         h = self.middle_block(h, emb, context)
+        
+        middle_post = {
+            'tensor': h.clone(),
+            'shape': tuple(h.shape),
+            'block_type': 'middle_block',
+            'stage': 'middle',
+            'resolution': h.shape[-1],
+            'channels': h.shape[1]
+        }
+        features_info['middle_post'] = middle_post        
+        
         print('\n')
         print("After middle block, shape:", h.shape)
         print('-')
@@ -817,20 +930,80 @@ class UNetModel(nn.Module):
         
         print('\noutputblocks')
         for i, module in enumerate(self.output_blocks):
+            # Before processing and concatenation
+            block_info = {
+                'tensor': h.clone(),
+                'shape': tuple(h.shape),
+                'block_type': type(module).__name__,
+                'stage': 'up',
+                'block_idx': i,
+                'resolution': h.shape[-1],
+                'channels': h.shape[1],
+                'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
+                                for layer in module.children())
+            }
+            features_info[f'up_pre_{i}'] = block_info
+            
             print(f"Before block {i}, shape:", h.shape)
             h = th.cat([h, hs.pop()], dim=1)
+            # After concatenation
+            block_info = {
+                'tensor': h.clone(),
+                'shape': tuple(h.shape),
+                'block_type': type(module).__name__,
+                'stage': 'up',
+                'block_idx': i,
+                'resolution': h.shape[-1],
+                'channels': h.shape[1],
+                'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
+                                for layer in module.children())
+            }
+            features_info[f'up_after_concat_{i}'] = block_info
             print(f"After concatenation in upsampling block {i}, shape:", h.shape)
             h = module(h, emb, context)
             print(f"After block {i}, shape:", h.shape)
+            # After processing
+            block_info = {
+                'tensor': h.clone(),
+                'shape': tuple(h.shape),
+                'block_type': type(module).__name__,
+                'stage': 'up',
+                'block_idx': i,
+                'resolution': h.shape[-1],
+                'channels': h.shape[1],
+                'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
+                                for layer in module.children())
+            }
+            features_info[f'up_post_{i}'] = block_info
             print('-')
             
 
         # Final output
-        
         print("\nBefore Final layer shape:", h.shape)
+        features_info['up_pre_final_layer'] = {
+            'tensor': h.clone(),
+            'shape': tuple(h.shape),
+            'block_type': 'output',
+            'stage': 'output',
+            'resolution': h.shape[-1],
+            'channels': h.shape[1]}
+        
         final = self.out(h)
         print("Final output shape:", final.shape)
-        return final
+        
+        features_info['up_post_final_layer'] = {
+            'tensor': final.clone(),
+            'shape': tuple(final.shape),
+            'block_type': 'output',
+            'stage': 'output',
+            'resolution': final.shape[-1],
+            'channels': final.shape[1]
+}
+        
+        print('*'*50)
+        print('RETURNING FEATURES')
+        print('*'*50)
+        return final, features_info
 
 
 class SuperResModel(UNetModel):

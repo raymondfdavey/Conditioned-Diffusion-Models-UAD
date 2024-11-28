@@ -1,0 +1,22 @@
+# configs/test_config.yaml
+defaults:
+  - _self_
+  - test/model: DDPM_2D.yaml       # Model architecture config
+  - test/datamodule: IXI_new.yaml  # Your new datamodule config
+
+# Essential paths
+data_dir: ${oc.env:DATA_DIR}  # Environment variable for data directory
+
+# Model settings
+model:
+  cfg:
+    # Basic model parameters that need to be preserved
+    imageDim: [192, 192, 160]
+    rescaleFactor: 2
+    objective: "pred_x0"
+    loss: "l1"
+    residualmode: "l1"
+    
+    # Test-specific settings
+    test_timesteps: 500
+    condition: true

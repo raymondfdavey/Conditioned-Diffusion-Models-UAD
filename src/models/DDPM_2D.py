@@ -69,7 +69,7 @@ class DDPM_2D(LightningModule):
         image_size = (int(cfg.imageDim[0] / cfg.rescaleFactor),int(cfg.imageDim[1] / cfg.rescaleFactor)), # only important when sampling
         timesteps = timesteps,   # number of steps
         sampling_timesteps = sampling_timesteps,
-        objective = cfg.get('objective','pred_x0'), # pred_noise or pred_x0
+        objective = cfg.get('objective','pred_x0'), # pred_noise or pred_x0 which is pred image start
         channels = 1,
         loss_type = cfg.get('loss','l1'),    # L1 or L2
         p2_loss_weight_gamma = cfg.get('p2_gamma',0),
@@ -127,8 +127,9 @@ class DDPM_2D(LightningModule):
             noise = gen_noise(self.cfg, input.shape).to(self.device)
         else: 
             noise = None
+        #! ACTUAL CALLLLLLLLLLLL
         # reconstruct
-        loss, reco = self.diffusion(input, cond = features, noise = noise)
+        loss, reco, unet_details = self.diffusion(input, cond = features, noise = noise)
 
         self.log(f'{self.prefix}train/Loss', loss, prog_bar=False, on_step=False, on_epoch=True, batch_size=input.shape[0],sync_dist=True)
         return {"loss": loss}
@@ -148,7 +149,7 @@ class DDPM_2D(LightningModule):
         else: 
             noise = None
         # reconstruct
-        loss, reco = self.diffusion(input,cond=features,noise=noise)
+        loss, reco, unet_details = self.diffusion(input,cond=features,noise=noise)
 
         self.log(f'{self.prefix}val/Loss_comb', loss, prog_bar=False, on_step=False, on_epoch=True, batch_size=input.shape[0],sync_dist=True)
         return {"loss": loss}
@@ -226,7 +227,8 @@ class DDPM_2D(LightningModule):
                     noise = gen_noise(self.cfg, input.shape).to(self.device)
                 else: 
                     noise = None
-                loss_diff, reco = self.diffusion(input,cond=features,t=t-1,noise=noise)
+                #! actual model call
+                loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=t-1,noise=noise)
                 reco_ensemble += reco
                 
             reco = reco_ensemble / len(timesteps) # average over timesteps
@@ -237,7 +239,8 @@ class DDPM_2D(LightningModule):
                 noise = gen_noise(self.cfg, input.shape).to(self.device)
             else: 
                 noise = None
-            loss_diff, reco = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
+            #! actual model call
+            loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
             print("reconstruction shape", reco.shape)
             print("reconstruction", reco)
         # calculate loss and Anomalyscores
