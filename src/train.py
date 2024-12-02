@@ -17,6 +17,7 @@ import torch
 from src.utils import utils
 from pytorch_lightning.loggers import LightningLoggerBase
 import pickle
+from src.utils.generate_noise import gen_noise
 
 os.environ['NUMEXPR_MAX_THREADS'] = '16'
 warnings.filterwarnings(

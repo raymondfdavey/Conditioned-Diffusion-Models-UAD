@@ -7,6 +7,12 @@ import numpy as np
 from src.datamodules.new_IXI import IXI_new
 import matplotlib.pyplot as plt
 from omegaconf import DictConfig, OmegaConf, open_dict
+from src.utils.generate_noise import gen_noise
+from src.utils.utils_eval import apply_3d_median_filter
+from torch.nn import functional as F
+
+
+
 
 def visualize_slices(input_tensor, title=""):
     """
@@ -30,175 +36,6 @@ def visualize_slices(input_tensor, title=""):
         axes[i].set_title(f'Slice {i}')
     
     plt.suptitle(f'{title}\nShape: {input_tensor.shape}')
-    plt.tight_layout()
-    plt.show()
-
-# def visualize_slice_selection(input_tensor, orig_tensor, mask_tensor, slice_indices=None, stage_name=""):
-#     """
-#     Visualizes the selected slices from the MRI volume at different stages of processing.
-    
-#     Args:
-#         input_tensor: The input tensor (processed) [B, C, H, W, D]
-#         orig_tensor: The original tensor [B, C, H, W, D]
-#         mask_tensor: The mask tensor [B, C, H, W, D]
-#         slice_indices: List of specific slice indices to visualize
-#         stage_name: Name of the processing stage (for the plot title)
-#     """
-#     import matplotlib.pyplot as plt
-#     import torch
-    
-#     # Convert tensors to CPU and get numpy arrays
-#     input_np = input_tensor[0, 0].cpu().numpy()  # Remove batch and channel dims
-#     orig_np = orig_tensor[0, 0].cpu().numpy()
-#     mask_np = mask_tensor[0, 0].cpu().numpy()
-    
-#     # If no specific indices provided, use all available slices
-#     if slice_indices is None:
-#         slice_indices = list(range(input_np.shape[-1]))
-    
-#     n_slices = len(slice_indices)
-    
-#     # Create a figure with three rows (input, original, and mask)
-#     fig, axes = plt.subplots(3, n_slices, figsize=(4*n_slices, 12))
-    
-#     # Add a title for the entire figure
-#     fig.suptitle(f'Slice Visualization - {stage_name}\nSlice Indices: {slice_indices}', fontsize=16, y=1.02)
-    
-#     # Row titles
-#     row_titles = ['Processed Input', 'Original', 'Mask Overlay']
-    
-#     for row_idx, (data, title) in enumerate([(input_np, 'Processed Input'),
-#                                            (orig_np, 'Original'),
-#                                            (mask_np, 'Mask')]):
-#         # Add row title
-#         fig.text(0.02, 0.75 - row_idx*0.3, title, rotation=90, fontsize=12)
-        
-#         for col_idx, slice_idx in enumerate(slice_indices):
-#             ax = axes[row_idx, col_idx]
-            
-#             if row_idx < 2:  # For input and original data
-#                 ax.imshow(data[..., slice_idx], cmap='gray')
-#             else:  # For mask overlay
-#                 ax.imshow(orig_np[..., slice_idx], cmap='gray')
-#                 ax.imshow(data[..., slice_idx], cmap='Reds', alpha=0.3)
-            
-#             ax.axis('off')
-#             ax.set_title(f'Slice {slice_idx}')
-    
-#     plt.tight_layout()
-#     plt.show()
-    
-#     # Print tensor information
-#     print(f"\n=== Tensor Information at {stage_name} ===")
-#     print(f"Input tensor shape: {input_tensor.shape}")
-#     print(f"Original tensor shape: {orig_tensor.shape}")
-#     print(f"Mask tensor shape: {mask_tensor.shape}")
-#     print(f"Value ranges:")
-#     print(f"  Input: [{input_tensor.min():.3f}, {input_tensor.max():.3f}]")
-#     print(f"  Original: [{orig_tensor.min():.3f}, {orig_tensor.max():.3f}]")
-#     print(f"  Mask: [{mask_tensor.min():.3f}, {mask_tensor.max():.3f}]")
-    
-def debug_batch_visualization(batch, cfg=None, num_eval_slices=None):
-    """
-    Comprehensive visualization function to debug and understand the data at each stage.
-    
-    Args:
-        batch: The batch from your dataloader
-        cfg: Optional configuration object
-        num_eval_slices: Optional number of slices to evaluate
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import torchio as tio
-    
-    # Extract data from batch
-    input_vol = batch['vol'][tio.DATA]
-    orig_vol = batch['vol_orig'][tio.DATA]
-    mask_vol = batch['mask_orig'][tio.DATA]
-    
-    # Get basic information
-    print("\n=== Batch Information ===")
-    print(f"Subject ID: {batch['ID']}")
-    print(f"Age: {batch['age']}")
-    print(f"Label: {batch['label']}")
-    print(f"Dataset: {batch['Dataset']}")
-    print(f"Stage: {batch['stage']}")
-    
-    print("\n=== Volume Shapes ===")
-    print(f"Input volume shape: {input_vol.shape}")
-    print(f"Original volume shape: {orig_vol.shape}")
-    print(f"Mask shape: {mask_vol.shape}")
-    
-    print("\n=== Value Ranges ===")
-    print(f"Input volume range: [{input_vol.min():.3f}, {input_vol.max():.3f}]")
-    print(f"Original volume range: [{orig_vol.min():.3f}, {orig_vol.max():.3f}]")
-    print(f"Mask range: [{mask_vol.min():.3f}, {mask_vol.max():.3f}]")
-    
-    # If we're selecting specific slices
-    if num_eval_slices and num_eval_slices != input_vol.size(4):
-        start_slice = int((input_vol.size(4) - num_eval_slices) / 2)
-        print(f"\n=== Slice Selection ===")
-        print(f"Selecting {num_eval_slices} slices starting from index {start_slice}")
-        
-        input_vol = input_vol[..., start_slice:start_slice+num_eval_slices]
-        orig_vol = orig_vol[..., start_slice:start_slice+num_eval_slices]
-        mask_vol = mask_vol[..., start_slice:start_slice+num_eval_slices]
-        
-        print(f"New shapes after slice selection:")
-        print(f"Input volume: {input_vol.shape}")
-        print(f"Original volume: {orig_vol.shape}")
-        print(f"Mask: {mask_vol.shape}")
-    
-    # Visualization function for a single volume
-    def plot_volume(vol, title, max_slices=8):
-        n_slices = min(vol.shape[-1], max_slices)
-        if n_slices < vol.shape[-1]:
-            slice_indices = np.linspace(0, vol.shape[-1]-1, n_slices, dtype=int)
-        else:
-            slice_indices = range(n_slices)
-            
-        fig, axes = plt.subplots(1, n_slices, figsize=(3*n_slices, 3))
-        if n_slices == 1:
-            axes = [axes]
-            
-        for i, idx in enumerate(slice_indices):
-            axes[i].imshow(vol[0, 0, :, :, idx].cpu(), cmap='gray')
-            axes[i].axis('off')
-            axes[i].set_title(f'Slice {idx}')
-        fig.suptitle(title)
-        plt.show()
-    
-    print("\n=== Visualizing Volumes ===")
-    plot_volume(input_vol, "Input Volume (Processed)")
-    plot_volume(orig_vol, "Original Volume")
-    plot_volume(mask_vol, "Mask")
-    
-    # Combined visualization with mask overlay
-    middle_slice = input_vol.shape[-1] // 2
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    
-    # Show processed input
-    axes[0].imshow(input_vol[0, 0, :, :, middle_slice].cpu(), cmap='gray')
-    axes[0].set_title('Processed Input')
-    axes[0].axis('off')
-    
-    # Show original
-    axes[1].imshow(orig_vol[0, 0, :, :, middle_slice].cpu(), cmap='gray')
-    axes[1].set_title('Original')
-    axes[1].axis('off')
-    
-    # Show mask overlay on original
-    orig_slice = orig_vol[0, 0, :, :, middle_slice].cpu()
-    mask_slice = mask_vol[0, 0, :, :, middle_slice].cpu()
-    
-    # Create the overlay using a proper colormap
-    axes[2].imshow(orig_slice, cmap='gray')
-    # Use 'Reds' colormap instead of 'red' for the mask overlay
-    axes[2].imshow(mask_slice, cmap='Reds', alpha=0.3)
-    axes[2].set_title('Original + Mask Overlay')
-    axes[2].axis('off')
-    
-    plt.suptitle(f'Middle Slice Comparison (Slice {middle_slice})')
     plt.tight_layout()
     plt.show()
 
@@ -353,72 +190,203 @@ def test(cfg: DictConfig):
     # Get the test dataloader
     test_loader = datamodule.test_dataloader()
     
-    # Get first batch for debugging
-    # first_batch = next(iter(test_loader))
-    
-    # print("\nDebugging first batch:")
-    # # Show what the data looks like before slice selection
-    # debug_batch_visualization(first_batch)
-    
-    # # Show what the data will look like with slice selection
-    # print("\nDebugging with slice selection:")
-    # debug_batch_visualization(first_batch, num_eval_slices=4)
-    
-    
-    
-    
     print("Starting testing...")
     results = []
     
-    
+        
+        # Process each batch from the test loader
     for batch_idx, batch in enumerate(test_loader):
         print(f"Processing batch {batch_idx}...")
         
-        # Get input data
+        # Get and prepare input data
         input = batch['vol'][tio.DATA]
         data_orig = batch['vol_orig'][tio.DATA]
         data_mask = batch['mask_orig'][tio.DATA]
         slice_indices = cfg.datamodule.cfg.get('slice_indices', [28, 35, 42, 48])
-
-        # Visualize before slice selection
-        print("\nBefore slice selection:")
-        # visualize_slices(input, title="Input Volume Before Selection")
         
-        print('OINPUT SIZE 4', input.size(4))
         print(f"Selecting slices at indices: {slice_indices}")
-
-        # Select the specified slices using indexing
-        input = input[..., slice_indices]  # This will pick exactly the slices we want
+        input = input[..., slice_indices]
         data_orig = data_orig[..., slice_indices]
         data_mask = data_mask[..., slice_indices]
-
-        # Visualize after slice selection
+        
         print("\nAfter slice selection:")
         print(f"Selected slices shape: {input.shape}")
-        visualize_slices(input, title=f"Selected Slices (indices {slice_indices})")
+
+        with torch.no_grad():
+            if torch.cuda.is_available():
+                input = input.cuda()
             
-    #     # Run inference
-    #     with torch.no_grad():
-    #         if torch.cuda.is_available():
-    #             input = input.cuda()
-    #         reconstruction = model(input)
+            # Transform volume to slices
+            assert input.shape[0] == 1, "Batch size must be 1"
+            input = input.squeeze(0).permute(3,0,1,2)  # [1,1,96,96,4] -> [4,1,96,96]
+            print("After transformation:", input.shape)
             
-    #         # Visualize reconstruction if you want
-    #         print("\nModel reconstruction:")
-    #         visualize_slices(reconstruction.cpu(), title="Model Output")
+            # Process slices
+            all_reconstructions = []
+            for slice_idx in range(input.shape[0]):
+                current_slice = input[slice_idx:slice_idx+1]
+                print(f"\nProcessing slice {slice_idx}")
+                print("Single slice shape:", current_slice.shape)
+                
+                features = model(current_slice)
+                print("Features shape:", features.shape)
+                
+                if cfg.get('noise_ensemble', False):
+                    timesteps = cfg.get('step_ensemble', [250,500,750])
+                    slice_reco_ensemble = torch.zeros_like(current_slice)
+                    
+                    for t in timesteps:
+                        noise = None
+                        if cfg.get('noisetype') is not None:
+                            noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
+                        
+                        loss_diff, reco, unet_details = model.diffusion(
+                            current_slice,
+                            cond=features,
+                            t=t-1,
+                            noise=noise
+                        )
+                        slice_reco_ensemble += reco
+                    
+                    slice_reconstruction = slice_reco_ensemble / len(timesteps)
+                else:
+                    noise = None
+                    if cfg.get('noisetype') is not None:
+                        noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
+                    
+                    loss_diff, slice_reconstruction, unet_details = model.diffusion(
+                        current_slice,
+                        cond=features,
+                        t=model.test_timesteps-1,
+                        noise=noise
+                    )
+                
+                # Remove the batch dimension before adding to list
+                all_reconstructions.append(slice_reconstruction.squeeze(0))
+            
+            # Stack and reshape reconstructions correctly
+            reconstruction = torch.stack(all_reconstructions, dim=0)  # [4,1,96,96]
+            print("Initial stacked shape:", reconstruction.shape)
+            
+            # Now prepare it for visualization:
+            # 1. Add channel dimension in the right place
+            reconstruction = reconstruction.unsqueeze(0)  # [1,4,1,96,96]
+            # 2. Rearrange to [B,C,H,W,D] format
+            reconstruction_viz = reconstruction.permute(0,2,3,4,1)  # [1,1,96,96,4]
+            print("Visualization shape:", reconstruction_viz.shape)
+
+            # Visualize using the provided method
+            print("\nVisualing reconstructed slices:")
+            visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+
+            # You can also visualize the original for comparison
+            print("\nVisualing original slices:")
+            visualize_slices(data_orig.cpu(), title="Original Input")
+        #     # Combine all reconstructions back into a volume
+        # reconstruction = torch.stack(all_reconstructions, dim=-1)
+        # print("\nFinal reconstruction shape:", reconstruction.shape)
+            # # Apply post-processing
+            # if not cfg.get('resizedEvaluation', False):
+            #     reconstruction = F.interpolate(
+            #         reconstruction.unsqueeze(0), 
+            #         size=cfg.get('new_size', [160,190,160]), 
+            #         mode="trilinear",
+            #         align_corners=True
+            #     ).squeeze()
+            # else:
+            #     reconstruction = reconstruction.squeeze()
+
+            # # Apply median filtering if configured
+            # if cfg.get('medianFiltering', False):
+            #     reconstruction = torch.from_numpy(
+            #         apply_3d_median_filter(
+            #             reconstruction.cpu().numpy(),
+            #             kernelsize=cfg.get('kernelsize_median', 5)
+            #         )
+            #     ).to(reconstruction.device)
+
+            # # For visualization, transform back to original format
+            # reconstruction_viz = reconstruction.unsqueeze(0).permute(0,2,3,4,1)
+            # visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+            
+
+
+        # # Run inference
+        # with torch.no_grad():
+        #     if torch.cuda.is_available():
+        #         input = input.cuda()
+            
+        #     # Get features
+        #     features = model(input)
+            
+        #     # Now we handle both noise approaches
+        #     if cfg.get('noise_ensemble', False):
+        #         print("Using noise ensemble approach...")
+        #         # Get timesteps from config, with a default if not specified
+        #         timesteps = cfg.get('step_ensemble', [250, 500, 750])
+        #         reco_ensemble = torch.zeros_like(input)
+                
+        #         # Loop through different timesteps
+        #         for t in timesteps:
+        #             noise = None
+        #             if cfg.get('noisetype') is not None:
+        #                 noise = gen_noise(cfg, input.shape).to(input.device)
+                    
+        #             loss_diff, reco, unet_details = model.diffusion(
+        #                 input,
+        #                 cond=features,
+        #                 t=t-1,
+        #                 noise=noise
+        #             )
+        #             reco_ensemble += reco
+                    
+        #         # Average the reconstructions
+        #         reconstruction = reco_ensemble / len(timesteps)
+                
+        #     else:
+        #         print("Using single noise approach...")
+        #         # Single noise generation
+        #         noise = None
+        #         if cfg.get('noisetype') is not None:
+        #             noise = gen_noise(cfg, input.shape).to(input.device)
+                    
+        #         loss_diff, reconstruction, unet_details = model.diffusion(
+        #             input,
+        #             cond=features,
+        #             t=model.test_timesteps-1,
+        #             noise=noise
+        #         )
+
+        #     print("Reconstruction shape:", reconstruction.shape)
+        #     #! reverse earlier wierdness
+        #     # Earlier we transformed the input from [1,1,96,96,4] -> [4,1,96,96]
+        #     # Now our reconstruction is in shape [4,1,96,96]
+        #     # We need to transform it back to the original format for visualization
+
+        #     # First, let's understand what happened:
+        #     print("\nModel reconstruction:")
+        #     print("Current reconstruction shape:", reconstruction.shape)  # [4,1,96,96]
+
+        #     # To visualize properly, we need to:
+        #     # 1. Add batch dimension
+        #     # 2. Move the slice dimension back to the end
+        #     reconstruction_viz = reconstruction.unsqueeze(0)  # Add batch: [4,1,96,96] -> [1,4,1,96,96]
+        #     reconstruction_viz = reconstruction_viz.permute(0,2,3,4,1)  # Reorder: [1,4,1,96,96] -> [1,1,96,96,4]
+
+        #     # Now we can visualize
+        #     print("Visualization shape:", reconstruction_viz.shape)
+        #     visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+            
         
-    #     # Store results as before
-    #     results.append({
-    #         'ID': batch['ID'],
-    #         'input': input,
-    #         'reconstruction': reconstruction,
-    #         'original': data_orig,
-    #         'mask': data_mask
-    #     })
-        
-    #     if cfg.datamodule.cfg.debugging and batch_idx >= 2:
-    #         print("Debug mode: stopping after 2 batches")
-    #         break
+        # Store results as before
+        results.append({
+            'ID': batch['ID'],
+            'input': input,
+            'reconstruction': reconstruction,
+            'original': data_orig,
+            'mask': data_mask
+        })
     
-    # print("Testing completed!")
-    # return results
+    
+    print("Testing completed!")
+    return results
