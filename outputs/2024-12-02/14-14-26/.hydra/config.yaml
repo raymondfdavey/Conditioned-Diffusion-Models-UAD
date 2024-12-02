@@ -1,0 +1,117 @@
+data_dir: ${oc.env:DATA_DIR}
+log_dir: ${oc.env:LOG_DIR}
+model:
+  cfg:
+    noise_ensemble: true
+    step_ensemble:
+    - 250
+    - 500
+    - 750
+    test_timesteps: 250
+    dim_mults:
+    - 1
+    - 2
+    - 2
+    unet_dim: 128
+    backbone: Spark_Encoder_2D
+    version: resnet50
+    cond_dim: 128
+    OpenaiUnet: true
+    spatial_transformer: false
+    condition: true
+    noisetype: simplex
+    encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt
+    pretrained_encoder: true
+    save_to_disc: true
+    name: DDPM_2D
+    imageDim: ${datamodule.cfg.imageDim}
+    rescaleFactor: ${datamodule.cfg.rescaleFactor}
+    interRes: ${datamodule.cfg.interRes}
+    cropMode: ${datamodule.cfg.cropMode}
+    spatialDims: 2D
+    resizedEvaluation: ${datamodule.cfg.resizedEvaluation}
+    learned_variance: false
+    learned_sinusoidal_cond: false
+    loss: l1
+    lossStrategy: mean
+    lr: ${datamodule.cfg.lr}
+    scheduleLR: false
+    patienceLR: 10
+    earlyStopping: false
+    patienceStopping: 50
+    saveOutputImages: true
+    evalSeg: true
+    pad: ${datamodule.cfg.pad}
+    erodeBrainmask: true
+    medianFiltering: true
+    threshold: auto
+    mode: ${datamodule.cfg.mode}
+  _target_: src.models.DDPM_2D.DDPM_2D
+datamodule:
+  cfg:
+    name: IXI
+    path:
+      pathBase: ${data_dir}
+      IXI:
+        IDs:
+          test: ${data_dir}/Data/splits/IXI_test.csv
+    imageDim:
+    - 192
+    - 192
+    - 4
+    rescaleFactor: 2
+    interRes:
+    - 8
+    - 8
+    - 4
+    cropMode: isotropic
+    spatialDims: ${model.cfg.spatialDims}
+    debugging: true
+    resizedEvaluation: true
+    unisotropic_sampling: true
+    num_workers: 4
+    curvatureFlow: true
+    percentile: true
+    pad: true
+    mode: t1
+num_folds: 1
+logger:
+  wandb:
+    project: cDDPM
+ckpt_path: best
+name: DDPM_cond_2D_spark_slice_test
+seed: 3141
+test:
+  datamodule:
+    _target_: src.datamodules.new_IXI.IXI_new
+    cfg:
+      name: IXI
+      path:
+        pathBase: ${data_dir}
+        IXI:
+          IDs:
+            test: ${data_dir}/Data/splits/IXI_test.csv
+      slice_indices:
+      - 80
+      - 81
+      - 82
+      - 83
+      imageDim:
+      - 192
+      - 192
+      - 4
+      rescaleFactor: 2
+      interRes:
+      - 8
+      - 8
+      - 4
+      cropMode: isotropic
+      spatialDims: ${model.cfg.spatialDims}
+      debugging: true
+      resizedEvaluation: true
+      unisotropic_sampling: true
+      num_workers: 4
+      curvatureFlow: true
+      percentile: true
+      pad: true
+      mode: t1

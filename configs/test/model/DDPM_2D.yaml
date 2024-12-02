@@ -19,18 +19,3 @@ cfg:
   noisetype: "simplex"
   condition: true
   spatial_transformer: false
-
-
-
-  # configs/test/model/DDPM_2D.yaml
-_target_: src.models.DDPM_2D.DDPM_2D
-
-cfg:
-  name: DDPM_2D
-  # Architecture parameters preserved from original model
-  unet_dim: 128
-  dim_mults: [1, 2, 2]
-  
-  # Image dimensions inherited from parent config
-  imageDim: ${model.cfg.imageDim}
-  rescaleFactor: ${model.cfg.rescaleFactor}
