@@ -21,7 +21,7 @@ model:
     #!
     noise_ensemble: True
     step_ensemble: [250,500,750]
-    test_timesteps: 250
+    test_timesteps: 200
     dim_mults: [1,2,2]
     unet_dim: 128
     backbone: Spark_Encoder_2D

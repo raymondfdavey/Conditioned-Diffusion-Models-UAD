@@ -197,17 +197,14 @@ class DDPM_2D(LightningModule):
         AnomalyScoreReg = []
         AnomalyScoreReco = []
         latentSpace = []
-        print('8'*1000)
-        print(input.size())
-        print(input.size(4))
-
-
-        num_slices = 4
+                        
+        num_slices = 2
 
         if num_slices != input.size(4):
             total_slices = input.size(4)
-            # Calculate slice indices at specific percentages of the volume
-            percentages = [0.2, 0.4, 0.6, 0.8]  # Can adjust these values
+            # percentages = [0.2, 0.4, 0.6, 0.8]  # Can adjust these values
+            percentages = [0.4, 0.6]  # Can adjust these values
+            # percentages = [0.5]  # Can adjust these values
             slice_indices = [int(total_slices * p) for p in percentages]
             
             input = input[..., slice_indices]
@@ -218,63 +215,84 @@ class DDPM_2D(LightningModule):
         else:
             ind_offset = 0
         
-        # num_slices = 4
-        
-        # if num_slices != input.size(4):
-        #     start_slice = int((input.size(4) - num_slices) / 2)
-        #     input = input[...,start_slice:start_slice+num_slices]
-        #     data_orig = data_orig[...,start_slice:start_slice+num_slices] 
-        #     data_seg = data_seg[...,start_slice:start_slice+num_slices]
-        #     data_mask = data_mask[...,start_slice:start_slice+num_slices]
-        #     ind_offset = start_slice
-        # else: 
-        #     ind_offset = 0 
 
         final_volume = torch.zeros([input.size(2), input.size(3), input.size(4)], device = self.device)
 
 
-        # reorder depth to batch dimension
         assert input.shape[0] == 1, "Batch size must be 1"
-        input = input.squeeze(0).permute(3,0,1,2) # [B,C,H,W,D] -> [D,C,H,W]
-        #!
-        # calc features for guidance
-        print('THE WEIRD CONDITION BIT CALLED "features" in DDPM_2D')
-        features = self(input)
-        print('shape features: ', features.shape)
-        features_single = features
-        #! CONDITION BIT!!!
-        if self.cfg.condition:
-            print('additng features to latern space')
-            print('latent space:', latentSpace)
-            latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
-        else: 
-            latentSpace.append(torch.tensor([0],dtype=float).repeat(input.shape[0]))
+        patching = True
+        if patching:
+            input = input.squeeze(0).permute(3,0,1,2)  # [B,C,H,W,D] -> [D,C,H,W]
+            
+            # Add artificial anomaly
+            patched_input, patch_mask = add_square_patch(input, 
+                                                    patch_size=20,  # adjust size as needed
+                                                    intensity=0.5, black=False)  # adjust intensity as needed
+            
+            # Generate features from patched input
+            features = self(patched_input)
+            features_single = features
+            if self.cfg.condition:
+                latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
+            self.cfg['noise_ensemble'] = False
 
-        if self.cfg.get('noise_ensemble',False): # evaluate with different noise levels
-            timesteps = self.cfg.get('step_ensemble',[250,500,750]) # timesteps to evaluate
-            reco_ensemble = torch.zeros_like(input)
-            for t in timesteps:
-                # generate noise
+            # Rest of the processing remains the same but uses patched_input
+            if self.cfg.get('noise_ensemble', False):
+                print('ensemble true')
+                timesteps = self.cfg.get('step_ensemble',[250,500,750]) # timesteps to evaluate
+                reco_ensemble = torch.zeros_like(patched_input)
+                for t in timesteps:
+                    # generate noise
+                    if self.cfg.get('noisetype') is not None:
+                        print('noisetupe true')
+                        
+                        noise = gen_noise(self.cfg, patched_input.shape).to(self.device)
+                    else: 
+                        noise = None
+                    #! actual model call <- THIS IS WHAT IS BEING RETUNED
+                    loss_diff, reco, unet_details = self.diffusion(patched_input,cond=features,t=t-1,noise=noise)
+                    reco_ensemble += reco
+                    
+                reco = reco_ensemble / len(timesteps) # average over timesteps
+            else:
+                if self.cfg.get('noisetype') is not None:
+                    noise = gen_noise(self.cfg, patched_input.shape).to(self.device)
+                else:
+                    noise = None
+                loss_diff, reco, unet_details = self.diffusion(patched_input, cond=features,
+                                                            t=self.test_timesteps-1, noise=noise)
+        else:
+            
+            input = input.squeeze(0).permute(3,0,1,2) # [B,C,H,W,D] -> [D,C,H,W]
+            features = self(input)
+            features_single = features
+            if self.cfg.condition:
+                latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
+
+            if self.cfg.get('noise_ensemble',False): # evaluate with different noise levels
+                print('ensemble true')
+                timesteps = self.cfg.get('step_ensemble',[250,500,750]) # timesteps to evaluate
+                reco_ensemble = torch.zeros_like(input)
+                for t in timesteps:
+                    # generate noise
+                    if self.cfg.get('noisetype') is not None:
+                        print('noisetupe true')
+                        
+                        noise = gen_noise(self.cfg, input.shape).to(self.device)
+                    else: 
+                        noise = None
+                    #! actual model call <- THIS IS WHAT IS BEING RETUNED
+                    loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=t-1,noise=noise)
+                    reco_ensemble += reco
+                    
+                reco = reco_ensemble / len(timesteps) # average over timesteps
+            else :
                 if self.cfg.get('noisetype') is not None:
                     noise = gen_noise(self.cfg, input.shape).to(self.device)
                 else: 
                     noise = None
-                #! actual model call
-                loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=t-1,noise=noise)
-                reco_ensemble += reco
-                
-            reco = reco_ensemble / len(timesteps) # average over timesteps
-            print("reconstruction shape", reco.shape)
-            # print("reconstruction", reco)
-        else :
-            if self.cfg.get('noisetype') is not None:
-                noise = gen_noise(self.cfg, input.shape).to(self.device)
-            else: 
-                noise = None
-            #! actual model call
-            loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
-            print("reconstruction shape", reco.shape)
-            # print("reconstruction", reco)
+                loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
+        
         # calculate loss and Anomalyscores
         AnomalyScoreComb.append(loss_diff.cpu())
         AnomalyScoreReg.append(loss_diff.cpu())
@@ -286,7 +304,7 @@ class DDPM_2D(LightningModule):
         print('FINAL VOLUME (DDPM) shape', final_volume.shape)
         # print('FINAL VOLUME', final_volume)
 
-       
+    
 
         # average across slices to get volume-based scores
         self.latentSpace_slice.extend(latentSpace)
@@ -310,38 +328,28 @@ class DDPM_2D(LightningModule):
         print('unsqueeze final volume shape (DDPM2d)', final_volume.shape)
         # print('unsqueeze final volume (DDPM 2D)', final_volume)
         # calculate metrics
+        print('='*100)
+        indent=1
+        # for key, value in unet_details.items():
+        #     print("  " * indent + f"📍 {key}")
+        #     if isinstance(value, dict):
+        #         # Skip printing the tensor value, but print its shape if available
+        #         for subkey, subvalue in value.items():
+        #             if subkey != 'tensor':
+        #                 print("  " * (indent + 1) + f"└─ {subkey}: {subvalue}")
+        #     print()  # Add blank line between sections
+        key_points = extract_key_points(unet_details)
+        # Function to print the extracted points with the same formatting
+        for key, value in key_points.items():
+            print("  " * indent + f"📍 {key}")
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    if subkey != 'tensor':
+                        print("  " * (indent + 1) + f"└─ {subkey}: {subvalue}")
+            print()  # Add blank line between sections
+        # print(unet_details.keys())
+        print('='*100)
 
-        _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label) # everything that is independent of the model choice
-
-        #! NEW TESTS BABY
-        
-        # # Visualization: Compare input and output for a specific slice
-        # slice_idx = 50  # Choose the slice you want to visualize (can be dynamic)
-        # visualize_comparison(input, final_volume, slice_idx=slice_idx)
-
-        # # Optional: Visualize the difference
-        # visualize_difference(input, final_volume, slice_idx=slice_idx)
-
-        # # Optional: Visualize a range of slices
-        # visualize_multiple_slices(input, final_volume, slice_range=range(40, 60))
-    
-    def on_test_end(self) :
-        # calculate metrics
-        _test_end(self) # everything that is independent of the model choice 
-
-
-    def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.cfg.lr)
-    
-    def update_prefix(self, prefix):
-        self.prefix = prefix 
-        
-        
-
-def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label_vol) :
-        print('='*10)
-        print('IN _TEST_STEP')
-        print('='*10)
         self.healthy_sets = ['IXI']
         # Resize the images if desired
         if not self.cfg.resizedEvaluation: # in case of full resolution evaluation 
@@ -394,7 +402,11 @@ def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID
         # save image grid
         if self.cfg['saveOutputImages'] :
             print("SAVING OUTPUT - ORIGINAL, FINAL, MASK ETC")
-            log_images(self,diff_volume, data_orig, data_seg, data_mask, final_volume, ID)
+            if patching:
+                log_images_with_patch(self, diff_volume, data_orig, data_seg, data_mask, 
+                         final_volume, patched_input, patch_mask, ID)
+            else:
+                log_images(self,diff_volume, data_orig, data_seg, data_mask, final_volume, ID)
             
         ### Compute Metrics per Volume / Step ###
         # if self.cfg.evalSeg and self.dataset[0] not in self.healthy_sets: # only compute metrics if segmentation is available
@@ -515,8 +527,29 @@ def _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID
         
 
         # self.eval_dict['labelPerVol'].append(label_vol.item())
+            #! NEW TESTS BABY
+            
+            # # Visualization: Compare input and output for a specific slice
+            # slice_idx = 50  # Choose the slice you want to visualize (can be dynamic)
+            # visualize_comparison(input, final_volume, slice_idx=slice_idx)
+
+            # # Optional: Visualize the difference
+            # visualize_difference(input, final_volume, slice_idx=slice_idx)
+
+            # # Optional: Visualize a range of slices
+            # visualize_multiple_slices(input, final_volume, slice_range=range(40, 60))
+    
+    def on_test_end(self) :
+        # calculate metrics
+        _test_end(self) # everything that is independent of the model choice 
 
 
+    def configure_optimizers(self):
+        return optim.Adam(self.parameters(), lr=self.cfg.lr)
+    
+    def update_prefix(self, prefix):
+        self.prefix = prefix 
+        
 #! SAVES IMAGES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None,  flow=None ):
     print('SAVING IMAGES!')
@@ -563,11 +596,126 @@ def log_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, 
         plt.cla()
         plt.close()
 
+def log_images_with_patch(self, diff_volume, data_orig, data_seg, data_mask, final_volume, patched_input, patch_mask, ID, diff_volume_KL=None, flow=None):
+    """
+    Modified log_images function that includes the patch visualization.
+    """
+    print('SAVING IMAGES WITH PATCH!')
+    diff_volume = diff_volume.cpu()
+    data_orig = data_orig.cpu()
+    data_seg = data_seg.cpu()
+    data_mask = data_mask.cpu()
+    final_volume = final_volume.cpu()
+    patched_input = patched_input.cpu()
+    patch_mask = patch_mask.cpu()
+    
+    ImagePathList = {
+        'imagesGrid': os.path.join(os.getcwd(), 'grid')
+    }
+    
+    for key in ImagePathList:
+        if not os.path.isdir(ImagePathList[key]):
+            os.mkdir(ImagePathList[key])
 
+    for j in range(0, diff_volume.squeeze().shape[2], 1):
+        # Create figure with 5 columns: original, patch mask, patched input, reconstruction, difference
+        fig, ax = plt.subplots(1, 5, figsize=(25, 4))
+        fig.subplots_adjust(wspace=0.02)
+        
+        # Original
+        ax[0].imshow(data_orig.squeeze()[...,j].rot90(3), 'gray')
+        ax[0].set_title('Original')
+        
+        # Patch Mask
+        ax[1].imshow(patch_mask.squeeze()[j].rot90(3), 'gray')
+        ax[1].set_title('Patch Mask')
+        
+        # Patched Input
+        ax[2].imshow(patched_input.squeeze()[j].rot90(3), 'gray')
+        ax[2].set_title('Patched Input')
+        
+        # Reconstruction
+        ax[3].imshow(final_volume[...,j].rot90(3).squeeze(), 'gray')
+        ax[3].set_title('Reconstruction')
+        
+        # Difference
+        im = ax[4].imshow(diff_volume.squeeze()[:,...,j].rot90(3), 'inferno',
+                         norm=colors.Normalize(vmin=0, vmax=diff_volume.max()+.01))
+        ax[4].set_title('Difference Map')
+        
+        # Add colorbar to difference map
+        plt.colorbar(im, ax=ax[4])
+        
+        # Remove ticks and frames
+        for axes in ax:
+            axes.set_xticks([])
+            axes.set_yticks([])
+            for spine in axes.spines.values():
+                spine.set_visible(False)
+        
+        plt.tight_layout()
+        
+        if self.cfg.get('save_to_disc', True):
+            plt.savefig(os.path.join(ImagePathList['imagesGrid'], 
+                                   '{}_{}_{}_Grid.png'.format(ID[0], j, 'patched')),
+                       bbox_inches='tight', dpi=300)
+        
+        self.logger.experiment[0].log({
+            'images_patched/{}/{}_Grid.png'.format(self.dataset[0], j): wandb.Image(plt)
+        })
+        
+        plt.clf()
+        plt.cla()
+        plt.close()
+
+def add_square_patch(image_tensor, patch_size=20, intensity=1.0, position=None, black=False):
+    """
+    Adds a square patch to the input image tensor.
+    Args:
+        image_tensor: Shape [D,C,H,W]
+        patch_size: Size of the square patch
+        intensity: Intensity value of the patch
+        position: Tuple of (y,x) coordinates for patch center. If None, places in center
+        black: If True, makes the patch black (0.0), if False uses the provided intensity
+    Returns:
+        patched_image: Modified image tensor
+        patch_mask: Binary mask showing patch location
+    """
+    patched_image = image_tensor.clone()
+    
+    # Get image dimensions
+    D, C, H, W = image_tensor.shape
+    
+    # Default to center if no position specified
+    if position is None:
+        y = H // 2
+        x = W // 2
+    else:
+        y, x = position
+        
+    # Calculate patch boundaries
+    half_size = patch_size // 2
+    y1 = max(y - half_size, 0)
+    y2 = min(y + half_size, H)
+    x1 = max(x - half_size, 0)
+    x2 = min(x + half_size, W)
+    
+    # Create patch mask
+    patch_mask = torch.zeros_like(image_tensor)
+    
+    # Determine patch intensity
+    patch_value = 0.0 if black else intensity
+    
+    # Add patch to all slices
+    for d in range(D):
+        patched_image[d, :, y1:y2, x1:x2] = patch_value
+        patch_mask[d, :, y1:y2, x1:x2] = 1
+        
+    return patched_image, patch_mask
 
 def _test_end(self) :
         print('IN TEST END')
-
+        pass
 #     # average over all test samples
 #         self.eval_dict['l1recoErrorAllMean'] = np.nanmean(self.eval_dict['l1recoErrorAll'])
 #         self.eval_dict['l1recoErrorAllStd'] = np.nanstd(self.eval_dict['l1recoErrorAll'])
@@ -692,8 +840,6 @@ def calc_thresh(dataset):
                 'thresh_10p_reco' : threshs_healthy_reco[np.argmax(fpr_healthy_reco>0.1)],
                 'thresh_10p_prior_kld' : threshs_healthy_prior_kld[np.argmax(fpr_healthy_prior_kld>0.1)], } 
     return threshholds_healthy
-
-
 
 def get_eval_dictionary():
     _eval = {
@@ -949,3 +1095,44 @@ def normalize(tensor): # THanks DZimmerer
     tens_deta /= float(np.max(tens_deta.numpy()))
 
     return tens_deta
+
+
+def extract_key_points(unet_details):
+    # Initialize dictionary to store our key monitoring points
+    key_monitoring_points = {}
+    
+    # Define the main points we want to capture
+    main_points = [
+        'input',                  # Input state
+        'down_post_1',           # Early features
+        'down_post_4',           # Mid-down features
+        'down_post_8',           # Deep features
+        'middle_post',           # Bottleneck
+        'up_post_3',            # Mid-up features 
+        'up_post_7',            # Late up features
+        'up_post_final_layer'    # Final output
+    ]
+    
+    # Define points where we expect associated embeddings
+    embedding_associations = {
+        'down_post_1': 'projected_embedding_level_0_block_1',
+        'down_post_4': 'projected_embedding_level_0_block_None',
+        'down_post_8': 'projected_embedding_level_1_block_None',
+        'middle_post': 'projected_embedding_level_None_block_None',
+        'up_post_3': 'projected_embedding_level_2_block_3',
+        'up_post_7': 'projected_embedding_level_1_block_3'
+    }
+    
+    # Extract the main points and their associated embeddings
+    for point in main_points:
+        if point in unet_details:
+            # Store the main point details
+            key_monitoring_points[point] = unet_details[point]
+            
+            # If this point has an associated embedding, store it too
+            if point in embedding_associations:
+                embedding_key = embedding_associations[point]
+                if embedding_key in unet_details:
+                    key_monitoring_points[f"{point}_embedding"] = unet_details[embedding_key]
+    
+    return key_monitoring_points

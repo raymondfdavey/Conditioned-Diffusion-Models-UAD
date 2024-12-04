@@ -832,8 +832,7 @@ class UNetModel(nn.Module):
         """
         self.features_info.clear()
         
-        features_info = {
-            'input': {
+        self.features_info['input'] = {
                 'tensor': x,
                 'shape': tuple(x.shape),
                 'block_type': 'input',
@@ -841,7 +840,6 @@ class UNetModel(nn.Module):
                 'resolution': x.shape[-1],
                 'channels': x.shape[1]
             }
-        }
 
         if self.num_classes is None and cond is not None:
             cond = None
@@ -858,7 +856,7 @@ class UNetModel(nn.Module):
             'resolution': emb.shape[-1],
             'channels': emb.shape[1],
         }
-        features_info[f'raw_embedding'] = embedding_info
+        self.features_info[f'raw_embedding'] = embedding_info
             
         h = x
         #! Track all block outputs
@@ -876,7 +874,7 @@ class UNetModel(nn.Module):
                 'channels': h.shape[1],
                 'is_downsample': isinstance(module[0], (Downsample, ResBlock)) and hasattr(module[0], 'down') and module[0].down
             }
-            features_info[f'down_pre_{i}'] = block_info
+            self.features_info[f'down_pre_{i}'] = block_info
             
             
             #print(f"Before block {i}, shape:", h.shape)
@@ -895,7 +893,7 @@ class UNetModel(nn.Module):
                 'channels': h.shape[1],
                 'is_downsample': isinstance(module[0], (Downsample, ResBlock)) and hasattr(module[0], 'down') and module[0].down
             }
-            features_info[f'down_post_{i}'] = block_info
+            self.features_info[f'down_post_{i}'] = block_info
             #print('-')
         
         #print(f"\nBefore middle block, shape:", h.shape)
@@ -908,7 +906,7 @@ class UNetModel(nn.Module):
             'resolution': h.shape[-1],
             'channels': h.shape[1]
         }
-        features_info['middle_pre'] = middle_pre
+        self.features_info['middle_pre'] = middle_pre
         
         h = self.middle_block(h, emb, context)
         
@@ -920,7 +918,7 @@ class UNetModel(nn.Module):
             'resolution': h.shape[-1],
             'channels': h.shape[1]
         }
-        features_info['middle_post'] = middle_post        
+        self.features_info['middle_post'] = middle_post        
         
         #print('\n')
         #print("After middle block, shape:", h.shape)
@@ -942,7 +940,7 @@ class UNetModel(nn.Module):
                 'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
                                 for layer in module.children())
             }
-            features_info[f'up_pre_{i}'] = block_info
+            self.features_info[f'up_pre_{i}'] = block_info
             
             #print(f"Before block {i}, shape:", h.shape)
             h = th.cat([h, hs.pop()], dim=1)
@@ -958,7 +956,7 @@ class UNetModel(nn.Module):
                 'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
                                 for layer in module.children())
             }
-            features_info[f'up_after_concat_{i}'] = block_info
+            self.features_info[f'up_after_concat_{i}'] = block_info
             #print(f"After concatenation in upsampling block {i}, shape:", h.shape)
             h = module(h, emb, context)
             #print(f"After block {i}, shape:", h.shape)
@@ -974,13 +972,13 @@ class UNetModel(nn.Module):
                 'is_upsample': any(isinstance(layer, (Upsample, ResBlock)) and hasattr(layer, 'up') and layer.up 
                                 for layer in module.children())
             }
-            features_info[f'up_post_{i}'] = block_info
+            self.features_info[f'up_post_{i}'] = block_info
             #print('-')
             
 
         # Final output
         #print("\nBefore Final layer shape:", h.shape)
-        features_info['up_pre_final_layer'] = {
+        self.features_info['up_pre_final_layer'] = {
             'tensor': h.clone(),
             'shape': tuple(h.shape),
             'block_type': 'output',
@@ -991,7 +989,7 @@ class UNetModel(nn.Module):
         final = self.out(h)
         #print("Final output shape:", final.shape)
         
-        features_info['up_post_final_layer'] = {
+        self.features_info['up_post_final_layer'] = {
             'tensor': final.clone(),
             'shape': tuple(final.shape),
             'block_type': 'output',
@@ -1003,7 +1001,7 @@ class UNetModel(nn.Module):
         #print('*'*50)
         #print('RETURNING FEATURES')
         #print('*'*50)
-        return final, features_info
+        return final, self.features_info
 
 
 class SuperResModel(UNetModel):

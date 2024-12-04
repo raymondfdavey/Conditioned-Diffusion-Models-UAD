@@ -1,0 +1,718 @@
+====================================================================================================
+  📍 input
+    └─ shape: (2, 1, 96, 96)
+    └─ block_type: input
+    └─ stage: input
+    └─ resolution: 96
+    └─ channels: 1
+
+  📍 raw_embedding
+    └─ shape: (2, 1024)
+    └─ stage: all_stages
+    └─ resolution: 1024
+    └─ channels: 1024
+
+  📍 down_pre_0
+    └─ shape: (2, 1, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 0
+    └─ resolution: 96
+    └─ channels: 1
+    └─ is_downsample: False
+
+  📍 down_post_0
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 0
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 down_pre_1
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 1
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_0_block_0
+    └─ shape: (2, 256)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 0
+    └─ block_idx: 0
+    └─ resolution: 256
+    └─ channels: 256
+
+  📍 down_post_1
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 1
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 down_pre_2
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 2
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_0_block_1
+    └─ shape: (2, 256)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 0
+    └─ block_idx: 1
+    └─ resolution: 256
+    └─ channels: 256
+
+  📍 down_post_2
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 2
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 down_pre_3
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 3
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_0_block_2
+    └─ shape: (2, 256)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 0
+    └─ block_idx: 2
+    └─ resolution: 256
+    └─ channels: 256
+
+  📍 down_post_3
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 3
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 down_pre_4
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 4
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_0_block_None
+    └─ shape: (2, 256)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 0
+    └─ block_idx: None
+    └─ resolution: 256
+    └─ channels: 256
+
+  📍 down_post_4
+    └─ shape: (2, 128, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 4
+    └─ resolution: 48
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 down_pre_5
+    └─ shape: (2, 128, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 5
+    └─ resolution: 48
+    └─ channels: 128
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_1_block_0
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 1
+    └─ block_idx: 0
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_5
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 5
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_6
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 6
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_1_block_1
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 1
+    └─ block_idx: 1
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_6
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 6
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_7
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 7
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_1_block_2
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 1
+    └─ block_idx: 2
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_7
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 7
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_8
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 8
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_1_block_None
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 1
+    └─ block_idx: None
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_8
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 8
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_9
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 9
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_2_block_0
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 2
+    └─ block_idx: 0
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_9
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 9
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_10
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 10
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_2_block_1
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 2
+    └─ block_idx: 1
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_10
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 10
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 down_pre_11
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 11
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 projected_embedding_level_2_block_2
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 2
+    └─ block_idx: 2
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 down_post_11
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: down
+    └─ block_idx: 11
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_downsample: False
+
+  📍 middle_pre
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: middle_block
+    └─ stage: middle
+    └─ resolution: 24
+    └─ channels: 256
+
+  📍 projected_embedding_level_None_block_None
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: None
+    └─ block_idx: None
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 middle_post
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: middle_block
+    └─ stage: middle
+    └─ resolution: 24
+    └─ channels: 256
+
+  📍 up_pre_0
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 0
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_0
+    └─ shape: (2, 512, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 0
+    └─ resolution: 24
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_0
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 0
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_1
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 1
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_1
+    └─ shape: (2, 512, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 1
+    └─ resolution: 24
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_1
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 1
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_2
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 2
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_2
+    └─ shape: (2, 512, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 2
+    └─ resolution: 24
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_2
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 2
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_3
+    └─ shape: (2, 256, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 3
+    └─ resolution: 24
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_3
+    └─ shape: (2, 512, 24, 24)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 3
+    └─ resolution: 24
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 projected_embedding_level_2_block_3
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 2
+    └─ block_idx: 3
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 up_post_3
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 3
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_4
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 4
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_4
+    └─ shape: (2, 512, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 4
+    └─ resolution: 48
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_4
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 4
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_5
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 5
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_5
+    └─ shape: (2, 512, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 5
+    └─ resolution: 48
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_5
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 5
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_6
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 6
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_6
+    └─ shape: (2, 512, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 6
+    └─ resolution: 48
+    └─ channels: 512
+    └─ is_upsample: False
+
+  📍 up_post_6
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 6
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_7
+    └─ shape: (2, 256, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 7
+    └─ resolution: 48
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_7
+    └─ shape: (2, 384, 48, 48)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 7
+    └─ resolution: 48
+    └─ channels: 384
+    └─ is_upsample: False
+
+  📍 projected_embedding_level_1_block_3
+    └─ shape: (2, 512)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 1
+    └─ block_idx: 3
+    └─ resolution: 512
+    └─ channels: 512
+
+  📍 up_post_7
+    └─ shape: (2, 256, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 7
+    └─ resolution: 96
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_pre_8
+    └─ shape: (2, 256, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 8
+    └─ resolution: 96
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_after_concat_8
+    └─ shape: (2, 384, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 8
+    └─ resolution: 96
+    └─ channels: 384
+    └─ is_upsample: False
+
+  📍 up_post_8
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 8
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_pre_9
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 9
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_after_concat_9
+    └─ shape: (2, 256, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 9
+    └─ resolution: 96
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_post_9
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 9
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_pre_10
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 10
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_after_concat_10
+    └─ shape: (2, 256, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 10
+    └─ resolution: 96
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 up_post_10
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 10
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_pre_11
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 11
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_after_concat_11
+    └─ shape: (2, 256, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 11
+    └─ resolution: 96
+    └─ channels: 256
+    └─ is_upsample: False
+
+  📍 projected_embedding_level_0_block_3
+    └─ shape: (2, 256)
+    └─ block_type: ResBlock
+    └─ stage: embedding_projection
+    └─ level: 0
+    └─ block_idx: 3
+    └─ resolution: 256
+    └─ channels: 256
+
+  📍 up_post_11
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: TimestepEmbedSequential
+    └─ stage: up
+    └─ block_idx: 11
+    └─ resolution: 96
+    └─ channels: 128
+    └─ is_upsample: False
+
+  📍 up_pre_final_layer
+    └─ shape: (2, 128, 96, 96)
+    └─ block_type: output
+    └─ stage: output
+    └─ resolution: 96
+    └─ channels: 128
+
+  📍 up_post_final_layer
+    └─ shape: (2, 1, 96, 96)
+    └─ block_type: output
+    └─ stage: output
+    └─ resolution: 96
+    └─ channels: 1
+
+====================================================================================================
