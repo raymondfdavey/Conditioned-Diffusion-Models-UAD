@@ -80,8 +80,8 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
 
     def forward(self, x, emb, context=None):
-        # print('in time embed sequential passing on forward method')
-        # print('in dims:', x.shape)
+        # #print('in time embed sequential passing on forward method')
+        # #print('in dims:', x.shape)
         
         for layer in self:
             if isinstance(layer, TimestepBlock):
@@ -90,7 +90,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
                 x = layer(x, context)
             else:
                 x = layer(x)
-        # print('out dims:', x.shape)
+        # #print('out dims:', x.shape)
         return x
 
 
@@ -113,8 +113,8 @@ class Upsample(nn.Module):
             self.conv = conv_nd(dims, self.channels, self.out_channels, 3, padding=1)
 
     def forward(self, x):
-        print('UPSAMPLING!!!!')
-        print('in dims:', x.shape)
+        #print('UPSAMPLING!!!!')
+        #print('in dims:', x.shape)
         assert x.shape[1] == self.channels
         if self.dims == 3:
             x = F.interpolate(
@@ -124,7 +124,7 @@ class Upsample(nn.Module):
             x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
-        print('out dims:', x.shape)
+        #print('out dims:', x.shape)
             
         return x
 class TransposedUpsample(nn.Module):
@@ -137,11 +137,11 @@ class TransposedUpsample(nn.Module):
         self.up = nn.ConvTranspose2d(self.channels,self.out_channels,kernel_size=ks,stride=2)
 
     def forward(self,x):
-        print(' TRASNPOSED UPSAMPLING!!!!')
-        print('in dims:', x.shape)
+        #print(' TRASNPOSED UPSAMPLING!!!!')
+        #print('in dims:', x.shape)
         
         out = self.up(x)
-        print('in dims:', out.shape)
+        #print('in dims:', out.shape)
         
         return out
 
@@ -170,11 +170,11 @@ class Downsample(nn.Module):
             self.op = avg_pool_nd(dims, kernel_size=stride, stride=stride)
 
     def forward(self, x):
-        print('IN DOWNSAMPLE FORWARD STEP')
-        print('in dims:', x.shape)
+        #print('IN DOWNSAMPLE FORWARD STEP')
+        #print('in dims:', x.shape)
         assert x.shape[1] == self.channels
         out = self.op(x)
-        print('out dims:', out.shape)
+        #print('out dims:', out.shape)
         
         return out
 
@@ -298,8 +298,8 @@ class ResBlock(TimestepBlock):
         #!
         # This is where embedding gets processed
         emb_out = self.emb_layers(emb)
-        # print("Raw embedding entering ResBlock:", emb.shape)
-        print("Projected embedding:", emb_out.shape)
+        # #print("Raw embedding entering ResBlock:", emb.shape)
+        #print("Projected embedding:", emb_out.shape)
 
                 # Add emb_out to the collector with metadata, structured like the other features
         if self.collector is not None:
@@ -325,8 +325,8 @@ class ResBlock(TimestepBlock):
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
             scale, shift = th.chunk(emb_out, 2, dim=1)
-            # print("Scale factors:", scale.shape)
-            # print("Shift factors:", shift.shape)
+            # #print("Scale factors:", scale.shape)
+            # #print("Shift factors:", shift.shape)
             h = out_norm(h) * (1 + scale) + shift
             h = out_rest(h)
         else:
@@ -375,21 +375,21 @@ class AttentionBlock(nn.Module):
         self.proj_out = zero_module(nn.Conv1d(channels, channels, 1))
         self#.half()
     def forward(self, x):
-        print('in unet attention block!')
-        print('x shape', x.shape)
-        # print('x', x)
+        #print('in unet attention block!')
+        #print('x shape', x.shape)
+        # #print('x', x)
         
         out = checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
-        print('out dims', out.shape)
+        #print('out dims', out.shape)
         return out
 
     def _forward(self, x):
         b, c, *spatial = x.shape
         x = x.reshape(b, c, -1)
-        print('ATTENTION GUTS SHAPE1', x.shape)
+        #print('ATTENTION GUTS SHAPE1', x.shape)
         qkv = self.qkv(self.norm(x))
         h = self.attention(qkv)
-        print('ATTENTION GUTS SHAPE2', h.shape)
+        #print('ATTENTION GUTS SHAPE2', h.shape)
         h = self.proj_out(h)
         return (x + h).reshape(b, c, *spatial)
 
@@ -538,13 +538,13 @@ class UNetModel(nn.Module):
         num_mem_kv=0
     ):
         super().__init__()
-        print('='*10)
-        print('INITIALISING UNET')
-        print('='*10)
+        #print('='*10)
+        #print('INITIALISING UNET')
+        #print('='*10)
         
-        print('*'*50)
-        print('INITIALISING FEATURES')
-        print('*'*50)
+        #print('*'*50)
+        #print('INITIALISING FEATURES')
+        #print('*'*50)
         self.features_info = {}
         
         for key, value in locals().items():
@@ -592,9 +592,9 @@ class UNetModel(nn.Module):
             fac = 1
             time_embed_dim = model_channels * 4 * fac
         
-        print('='*10)
-        print('making time_embed layer')
-        print('='*10)
+        #print('='*10)
+        #print('making time_embed layer')
+        #print('='*10)
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim//fac),
             nn.SiLU(),
@@ -617,7 +617,7 @@ class UNetModel(nn.Module):
 
         for level, mult in enumerate(channel_mult):
             for resb in range(num_res_blocks):
-                print(f'{resb=}')
+                #print(f'{resb=}')
                 layers = [
                     ResBlock(
                         ch,
@@ -821,7 +821,7 @@ class UNetModel(nn.Module):
         return self.forward(*args,**kwargs)
 
     def forward(self, x, timesteps, cond=None, context=None):
-        print("Initial input shape:", x.shape)
+        #print("Initial input shape:", x.shape)
         """
         Apply the model to an input batch.
         :param x: an [N x C x ...] Tensor of inputs.
@@ -863,7 +863,7 @@ class UNetModel(nn.Module):
         h = x
         #! Track all block outputs
         
-        print('\ninputblocks')
+        #print('\ninputblocks')
         for i, module in enumerate(self.input_blocks):
             # Before processing
             block_info = {
@@ -879,10 +879,10 @@ class UNetModel(nn.Module):
             features_info[f'down_pre_{i}'] = block_info
             
             
-            print(f"Before block {i}, shape:", h.shape)
+            #print(f"Before block {i}, shape:", h.shape)
             h = module(h, emb, context)
             hs.append(h)
-            print(f"After block {i}, shape:", h.shape)
+            #print(f"After block {i}, shape:", h.shape)
             
             # After processing
             block_info = {
@@ -896,9 +896,9 @@ class UNetModel(nn.Module):
                 'is_downsample': isinstance(module[0], (Downsample, ResBlock)) and hasattr(module[0], 'down') and module[0].down
             }
             features_info[f'down_post_{i}'] = block_info
-            print('-')
+            #print('-')
         
-        print(f"\nBefore middle block, shape:", h.shape)
+        #print(f"\nBefore middle block, shape:", h.shape)
         # Middle block
         middle_pre = {
             'tensor': h.clone(),
@@ -922,13 +922,13 @@ class UNetModel(nn.Module):
         }
         features_info['middle_post'] = middle_post        
         
-        print('\n')
-        print("After middle block, shape:", h.shape)
-        print('-')
+        #print('\n')
+        #print("After middle block, shape:", h.shape)
+        #print('-')
         
-        print('\n')
+        #print('\n')
         
-        print('\noutputblocks')
+        #print('\noutputblocks')
         for i, module in enumerate(self.output_blocks):
             # Before processing and concatenation
             block_info = {
@@ -944,7 +944,7 @@ class UNetModel(nn.Module):
             }
             features_info[f'up_pre_{i}'] = block_info
             
-            print(f"Before block {i}, shape:", h.shape)
+            #print(f"Before block {i}, shape:", h.shape)
             h = th.cat([h, hs.pop()], dim=1)
             # After concatenation
             block_info = {
@@ -959,9 +959,9 @@ class UNetModel(nn.Module):
                                 for layer in module.children())
             }
             features_info[f'up_after_concat_{i}'] = block_info
-            print(f"After concatenation in upsampling block {i}, shape:", h.shape)
+            #print(f"After concatenation in upsampling block {i}, shape:", h.shape)
             h = module(h, emb, context)
-            print(f"After block {i}, shape:", h.shape)
+            #print(f"After block {i}, shape:", h.shape)
             # After processing
             block_info = {
                 'tensor': h.clone(),
@@ -975,11 +975,11 @@ class UNetModel(nn.Module):
                                 for layer in module.children())
             }
             features_info[f'up_post_{i}'] = block_info
-            print('-')
+            #print('-')
             
 
         # Final output
-        print("\nBefore Final layer shape:", h.shape)
+        #print("\nBefore Final layer shape:", h.shape)
         features_info['up_pre_final_layer'] = {
             'tensor': h.clone(),
             'shape': tuple(h.shape),
@@ -989,7 +989,7 @@ class UNetModel(nn.Module):
             'channels': h.shape[1]}
         
         final = self.out(h)
-        print("Final output shape:", final.shape)
+        #print("Final output shape:", final.shape)
         
         features_info['up_post_final_layer'] = {
             'tensor': final.clone(),
@@ -1000,9 +1000,9 @@ class UNetModel(nn.Module):
             'channels': final.shape[1]
 }
         
-        print('*'*50)
-        print('RETURNING FEATURES')
-        print('*'*50)
+        #print('*'*50)
+        #print('RETURNING FEATURES')
+        #print('*'*50)
         return final, features_info
 
 
