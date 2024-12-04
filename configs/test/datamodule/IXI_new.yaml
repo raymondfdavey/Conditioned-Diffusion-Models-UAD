@@ -12,7 +12,7 @@ cfg:
   slice_indices: [28, 35, 42, 48]
   
   # Core parameters
-  imageDim: [192, 192, 160]  # Modified for 4 slices
+  imageDim: [192, 192, 100]  # Modified for 4 slices
   rescaleFactor: 2
   interRes: [8, 8, 5]
   cropMode: 'isotropic'
@@ -27,3 +27,4 @@ cfg:
   percentile: True
   pad: True
   mode: t1
+  batch_size: 32

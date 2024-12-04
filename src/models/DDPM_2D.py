@@ -186,7 +186,11 @@ class DDPM_2D(LightningModule):
         AnomalyScoreReg = []
         AnomalyScoreReco = []
         latentSpace = []
-
+        print('8'*1000)
+        print(input.size())
+        print(input.size(4))
+        
+        self.cfg['num_eval_slices']=4
         if self.cfg.get('num_eval_slices', input.size(4)) != input.size(4):
             num_slices = self.cfg.get('num_eval_slices', input.size(4))  # number of center slices to evaluate. If not set, the whole Volume is evaluated
             start_slice = int((input.size(4) - num_slices) / 2)

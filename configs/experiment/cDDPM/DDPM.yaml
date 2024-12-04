@@ -11,7 +11,7 @@ datamodule:
   cfg:
     rescaleFactor: 2
     imageDim: [192,192,100]
-    mode: t2 
+    mode: t1 
     aug_intensity: True
 model:
   cfg: 

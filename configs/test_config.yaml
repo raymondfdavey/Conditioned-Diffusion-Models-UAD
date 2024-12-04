@@ -2,7 +2,7 @@
 
 defaults:
   - _self_
-  - model: DDPM_2D.yaml  # This uses your existing model config
+  - model: DDPM_2D_ray.yaml  # This uses your existing model config
   - test/datamodule: IXI_new.yaml  # Your new datamodule for slice-based testing
 
 data_dir: ${oc.env:DATA_DIR}
@@ -38,7 +38,7 @@ datamodule:
           test: ${data_dir}/Data/splits/IXI_test.csv
     
     # Original image dimensions but modified for 4 slices
-    imageDim: [192, 192, 160]  # Changed from [192, 192, 160] to handle 4 slices
+    imageDim: [192, 192, 100]  # Changed from [192, 192, 160] to handle 4 slices
     rescaleFactor: 2
     interRes: [8, 8, 5]  # Adjusted for 4 slices
     cropMode: 'isotropic'

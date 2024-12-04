@@ -190,203 +190,217 @@ def test(cfg: DictConfig):
     # Get the test dataloader
     test_loader = datamodule.test_dataloader()
     
-    print("Starting testing...")
-    results = []
+    model.on_test_start()
     
-        
-        # Process each batch from the test loader
+    num_slices = 4
+
     for batch_idx, batch in enumerate(test_loader):
-        print(f"Processing batch {batch_idx}...")
-        
-        # Get and prepare input data
-        input = batch['vol'][tio.DATA]
-        data_orig = batch['vol_orig'][tio.DATA]
-        data_mask = batch['mask_orig'][tio.DATA]
-        slice_indices = cfg.datamodule.cfg.get('slice_indices', [28, 35, 42, 48])
-        
-        print(f"Selecting slices at indices: {slice_indices}")
-        input = input[..., slice_indices]
-        data_orig = data_orig[..., slice_indices]
-        data_mask = data_mask[..., slice_indices]
-        
-        print("\nAfter slice selection:")
-        print(f"Selected slices shape: {input.shape}")
+        model.test_step(batch, batch_idx, num_slices)
+    
+    
+    
+    
+    
 
-        with torch.no_grad():
-            if torch.cuda.is_available():
-                input = input.cuda()
+    
+    
+    
+    # print("Starting testing...")
+    # results = []
+    
+        
+    #     # Process each batch from the test loader
+    # for batch_idx, batch in enumerate(test_loader):
+    #     print(f"Processing batch {batch_idx}...")
+        
+    #     # Get and prepare input data
+    #     input = batch['vol'][tio.DATA]
+    #     data_orig = batch['vol_orig'][tio.DATA]
+    #     data_mask = batch['mask_orig'][tio.DATA]
+        
+    #     print(f"Selecting slices at indices: {slice_indices}")
+    #     input = input[..., slice_indices]
+    #     data_orig = data_orig[..., slice_indices]
+    #     data_mask = data_mask[..., slice_indices]
+        
+    #     print("\nAfter slice selection:")
+    #     print(f"Selected slices shape: {input.shape}")
+
+    #     with torch.no_grad():
+    #         if torch.cuda.is_available():
+    #             input = input.cuda()
             
-            # Transform volume to slices
-            assert input.shape[0] == 1, "Batch size must be 1"
-            input = input.squeeze(0).permute(3,0,1,2)  # [1,1,96,96,4] -> [4,1,96,96]
-            print("After transformation:", input.shape)
+    #         # Transform volume to slices
+    #         assert input.shape[0] == 1, "Batch size must be 1"
+    #         input = input.squeeze(0).permute(3,0,1,2)  # [1,1,96,96,4] -> [4,1,96,96]
+    #         print("After transformation:", input.shape)
             
-            # Process slices
-            all_reconstructions = []
-            for slice_idx in range(input.shape[0]):
-                current_slice = input[slice_idx:slice_idx+1]
-                print(f"\nProcessing slice {slice_idx}")
-                print("Single slice shape:", current_slice.shape)
+    #         # Process slices
+    #         all_reconstructions = []
+    #         for slice_idx in range(input.shape[0]):
+    #             current_slice = input[slice_idx:slice_idx+1]
+    #             print(f"\nProcessing slice {slice_idx}")
+    #             print("Single slice shape:", current_slice.shape)
                 
-                features = model(current_slice)
-                print("Features shape:", features.shape)
+    #             features = model(current_slice)
+    #             print("Features shape:", features.shape)
                 
-                if cfg.get('noise_ensemble', False):
-                    timesteps = cfg.get('step_ensemble', [250,500,750])
-                    slice_reco_ensemble = torch.zeros_like(current_slice)
+    #             if cfg.get('noise_ensemble', False):
+    #                 timesteps = cfg.get('step_ensemble', [250,500,750])
+    #                 slice_reco_ensemble = torch.zeros_like(current_slice)
                     
-                    for t in timesteps:
-                        noise = None
-                        if cfg.get('noisetype') is not None:
-                            noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
+    #                 for t in timesteps:
+    #                     noise = None
+    #                     if cfg.get('noisetype') is not None:
+    #                         noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
                         
-                        loss_diff, reco, unet_details = model.diffusion(
-                            current_slice,
-                            cond=features,
-                            t=t-1,
-                            noise=noise
-                        )
-                        slice_reco_ensemble += reco
+    #                     loss_diff, reco, unet_details = model.diffusion(
+    #                         current_slice,
+    #                         cond=features,
+    #                         t=t-1,
+    #                         noise=noise
+    #                     )
+    #                     slice_reco_ensemble += reco
                     
-                    slice_reconstruction = slice_reco_ensemble / len(timesteps)
-                else:
-                    noise = None
-                    if cfg.get('noisetype') is not None:
-                        noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
+    #                 slice_reconstruction = slice_reco_ensemble / len(timesteps)
+    #             else:
+    #                 noise = None
+    #                 if cfg.get('noisetype') is not None:
+    #                     noise = gen_noise(cfg, current_slice.shape).to(current_slice.device)
                     
-                    loss_diff, slice_reconstruction, unet_details = model.diffusion(
-                        current_slice,
-                        cond=features,
-                        t=model.test_timesteps-1,
-                        noise=noise
-                    )
+    #                 loss_diff, slice_reconstruction, unet_details = model.diffusion(
+    #                     current_slice,
+    #                     cond=features,
+    #                     t=model.test_timesteps-1,
+    #                     noise=noise
+    #                 )
                 
-                # Remove the batch dimension before adding to list
-                all_reconstructions.append(slice_reconstruction.squeeze(0))
+    #             # Remove the batch dimension before adding to list
+    #             all_reconstructions.append(slice_reconstruction.squeeze(0))
             
-            # Stack and reshape reconstructions correctly
-            reconstruction = torch.stack(all_reconstructions, dim=0)  # [4,1,96,96]
-            print("Initial stacked shape:", reconstruction.shape)
+    #         # Stack and reshape reconstructions correctly
+    #         reconstruction = torch.stack(all_reconstructions, dim=0)  # [4,1,96,96]
+    #         print("Initial stacked shape:", reconstruction.shape)
             
-            # Now prepare it for visualization:
-            # 1. Add channel dimension in the right place
-            reconstruction = reconstruction.unsqueeze(0)  # [1,4,1,96,96]
-            # 2. Rearrange to [B,C,H,W,D] format
-            reconstruction_viz = reconstruction.permute(0,2,3,4,1)  # [1,1,96,96,4]
-            print("Visualization shape:", reconstruction_viz.shape)
+    #         # Now prepare it for visualization:
+    #         # 1. Add channel dimension in the right place
+    #         reconstruction = reconstruction.unsqueeze(0)  # [1,4,1,96,96]
+    #         # 2. Rearrange to [B,C,H,W,D] format
+    #         reconstruction_viz = reconstruction.permute(0,2,3,4,1)  # [1,1,96,96,4]
+    #         print("Visualization shape:", reconstruction_viz.shape)
 
-            # Visualize using the provided method
-            print("\nVisualing reconstructed slices:")
-            visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+    #         # Visualize using the provided method
+    #         print("\nVisualing reconstructed slices:")
+    #         visualize_slices(reconstruction_viz.cpu(), title="Model Output")
 
-            # You can also visualize the original for comparison
-            print("\nVisualing original slices:")
-            visualize_slices(data_orig.cpu(), title="Original Input")
-        #     # Combine all reconstructions back into a volume
-        # reconstruction = torch.stack(all_reconstructions, dim=-1)
-        # print("\nFinal reconstruction shape:", reconstruction.shape)
-            # # Apply post-processing
-            # if not cfg.get('resizedEvaluation', False):
-            #     reconstruction = F.interpolate(
-            #         reconstruction.unsqueeze(0), 
-            #         size=cfg.get('new_size', [160,190,160]), 
-            #         mode="trilinear",
-            #         align_corners=True
-            #     ).squeeze()
-            # else:
-            #     reconstruction = reconstruction.squeeze()
+    #         # You can also visualize the original for comparison
+    #         print("\nVisualing original slices:")
+    #         visualize_slices(data_orig.cpu(), title="Original Input")
+    #     #     # Combine all reconstructions back into a volume
+    #     # reconstruction = torch.stack(all_reconstructions, dim=-1)
+    #     # print("\nFinal reconstruction shape:", reconstruction.shape)
+    #         # # Apply post-processing
+    #         # if not cfg.get('resizedEvaluation', False):
+    #         #     reconstruction = F.interpolate(
+    #         #         reconstruction.unsqueeze(0), 
+    #         #         size=cfg.get('new_size', [160,190,160]), 
+    #         #         mode="trilinear",
+    #         #         align_corners=True
+    #         #     ).squeeze()
+    #         # else:
+    #         #     reconstruction = reconstruction.squeeze()
 
-            # # Apply median filtering if configured
-            # if cfg.get('medianFiltering', False):
-            #     reconstruction = torch.from_numpy(
-            #         apply_3d_median_filter(
-            #             reconstruction.cpu().numpy(),
-            #             kernelsize=cfg.get('kernelsize_median', 5)
-            #         )
-            #     ).to(reconstruction.device)
+    #         # # Apply median filtering if configured
+    #         # if cfg.get('medianFiltering', False):
+    #         #     reconstruction = torch.from_numpy(
+    #         #         apply_3d_median_filter(
+    #         #             reconstruction.cpu().numpy(),
+    #         #             kernelsize=cfg.get('kernelsize_median', 5)
+    #         #         )
+    #         #     ).to(reconstruction.device)
 
-            # # For visualization, transform back to original format
-            # reconstruction_viz = reconstruction.unsqueeze(0).permute(0,2,3,4,1)
-            # visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+    #         # # For visualization, transform back to original format
+    #         # reconstruction_viz = reconstruction.unsqueeze(0).permute(0,2,3,4,1)
+    #         # visualize_slices(reconstruction_viz.cpu(), title="Model Output")
             
 
 
-        # # Run inference
-        # with torch.no_grad():
-        #     if torch.cuda.is_available():
-        #         input = input.cuda()
+    #     # # Run inference
+    #     # with torch.no_grad():
+    #     #     if torch.cuda.is_available():
+    #     #         input = input.cuda()
             
-        #     # Get features
-        #     features = model(input)
+    #     #     # Get features
+    #     #     features = model(input)
             
-        #     # Now we handle both noise approaches
-        #     if cfg.get('noise_ensemble', False):
-        #         print("Using noise ensemble approach...")
-        #         # Get timesteps from config, with a default if not specified
-        #         timesteps = cfg.get('step_ensemble', [250, 500, 750])
-        #         reco_ensemble = torch.zeros_like(input)
+    #     #     # Now we handle both noise approaches
+    #     #     if cfg.get('noise_ensemble', False):
+    #     #         print("Using noise ensemble approach...")
+    #     #         # Get timesteps from config, with a default if not specified
+    #     #         timesteps = cfg.get('step_ensemble', [250, 500, 750])
+    #     #         reco_ensemble = torch.zeros_like(input)
                 
-        #         # Loop through different timesteps
-        #         for t in timesteps:
-        #             noise = None
-        #             if cfg.get('noisetype') is not None:
-        #                 noise = gen_noise(cfg, input.shape).to(input.device)
+    #     #         # Loop through different timesteps
+    #     #         for t in timesteps:
+    #     #             noise = None
+    #     #             if cfg.get('noisetype') is not None:
+    #     #                 noise = gen_noise(cfg, input.shape).to(input.device)
                     
-        #             loss_diff, reco, unet_details = model.diffusion(
-        #                 input,
-        #                 cond=features,
-        #                 t=t-1,
-        #                 noise=noise
-        #             )
-        #             reco_ensemble += reco
+    #     #             loss_diff, reco, unet_details = model.diffusion(
+    #     #                 input,
+    #     #                 cond=features,
+    #     #                 t=t-1,
+    #     #                 noise=noise
+    #     #             )
+    #     #             reco_ensemble += reco
                     
-        #         # Average the reconstructions
-        #         reconstruction = reco_ensemble / len(timesteps)
+    #     #         # Average the reconstructions
+    #     #         reconstruction = reco_ensemble / len(timesteps)
                 
-        #     else:
-        #         print("Using single noise approach...")
-        #         # Single noise generation
-        #         noise = None
-        #         if cfg.get('noisetype') is not None:
-        #             noise = gen_noise(cfg, input.shape).to(input.device)
+    #     #     else:
+    #     #         print("Using single noise approach...")
+    #     #         # Single noise generation
+    #     #         noise = None
+    #     #         if cfg.get('noisetype') is not None:
+    #     #             noise = gen_noise(cfg, input.shape).to(input.device)
                     
-        #         loss_diff, reconstruction, unet_details = model.diffusion(
-        #             input,
-        #             cond=features,
-        #             t=model.test_timesteps-1,
-        #             noise=noise
-        #         )
+    #     #         loss_diff, reconstruction, unet_details = model.diffusion(
+    #     #             input,
+    #     #             cond=features,
+    #     #             t=model.test_timesteps-1,
+    #     #             noise=noise
+    #     #         )
 
-        #     print("Reconstruction shape:", reconstruction.shape)
-        #     #! reverse earlier wierdness
-        #     # Earlier we transformed the input from [1,1,96,96,4] -> [4,1,96,96]
-        #     # Now our reconstruction is in shape [4,1,96,96]
-        #     # We need to transform it back to the original format for visualization
+    #     #     print("Reconstruction shape:", reconstruction.shape)
+    #     #     #! reverse earlier wierdness
+    #     #     # Earlier we transformed the input from [1,1,96,96,4] -> [4,1,96,96]
+    #     #     # Now our reconstruction is in shape [4,1,96,96]
+    #     #     # We need to transform it back to the original format for visualization
 
-        #     # First, let's understand what happened:
-        #     print("\nModel reconstruction:")
-        #     print("Current reconstruction shape:", reconstruction.shape)  # [4,1,96,96]
+    #     #     # First, let's understand what happened:
+    #     #     print("\nModel reconstruction:")
+    #     #     print("Current reconstruction shape:", reconstruction.shape)  # [4,1,96,96]
 
-        #     # To visualize properly, we need to:
-        #     # 1. Add batch dimension
-        #     # 2. Move the slice dimension back to the end
-        #     reconstruction_viz = reconstruction.unsqueeze(0)  # Add batch: [4,1,96,96] -> [1,4,1,96,96]
-        #     reconstruction_viz = reconstruction_viz.permute(0,2,3,4,1)  # Reorder: [1,4,1,96,96] -> [1,1,96,96,4]
+    #     #     # To visualize properly, we need to:
+    #     #     # 1. Add batch dimension
+    #     #     # 2. Move the slice dimension back to the end
+    #     #     reconstruction_viz = reconstruction.unsqueeze(0)  # Add batch: [4,1,96,96] -> [1,4,1,96,96]
+    #     #     reconstruction_viz = reconstruction_viz.permute(0,2,3,4,1)  # Reorder: [1,4,1,96,96] -> [1,1,96,96,4]
 
-        #     # Now we can visualize
-        #     print("Visualization shape:", reconstruction_viz.shape)
-        #     visualize_slices(reconstruction_viz.cpu(), title="Model Output")
+    #     #     # Now we can visualize
+    #     #     print("Visualization shape:", reconstruction_viz.shape)
+    #     #     visualize_slices(reconstruction_viz.cpu(), title="Model Output")
             
         
-        # Store results as before
-        results.append({
-            'ID': batch['ID'],
-            'input': input,
-            'reconstruction': reconstruction,
-            'original': data_orig,
-            'mask': data_mask
-        })
+    #     # Store results as before
+    #     results.append({
+    #         'ID': batch['ID'],
+    #         'input': input,
+    #         'reconstruction': reconstruction,
+    #         'original': data_orig,
+    #         'mask': data_mask
+    #     })
     
     
-    print("Testing completed!")
-    return results
+    # print("Testing completed!")
+    # return results

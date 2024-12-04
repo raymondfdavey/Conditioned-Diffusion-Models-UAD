@@ -21,11 +21,7 @@ class IXI_new(LightningDataModule):
         
         self.preload = cfg.get('preload',True)
         # self.cfg.permute = False # no permutation for IXI
-        
-        
-        # Add slice indices to config (can be overridden in actual config)
-        self.slice_indices = cfg.get('slice_indices', [80, 81, 82, 83])  # default middle slices
-        
+                
         self.imgpath = {}
         
         self.csvpath_test = cfg.path.IXI.IDs.test
@@ -52,34 +48,152 @@ class IXI_new(LightningDataModule):
 
 
 
-def new_eval(csv, cfg): 
+def new_eval(csv, cfg, preload=True): 
     subjects = []
+    # print(f"Creating TRAIN dataset with {len(csv)} samples")
 
     for idx, sub in csv.iterrows():
-        # Create a subject dictionary with only the essential fields we need
+        # print(f"Processing TRAIN sample {idx}: {sub.img_path}")
+
         subject_dict = {
-            'vol': tio.ScalarImage(sub.img_path, reader=sitk_reader),
-            'vol_orig': tio.ScalarImage(sub.img_path, reader=sitk_reader),
-            'age': sub.age,
-            'ID': sub.img_name,
-            'label': sub.label,
-            'Dataset': sub.setname,
-            'stage': sub.settype,
-            'path': sub.img_path,
-            'mask': tio.LabelMap(sub.mask_path, reader=sitk_reader),
-            'mask_orig': tio.LabelMap(sub.mask_path, reader=sitk_reader)
+            'vol' : tio.ScalarImage(sub.img_path,reader=sitk_reader), 
+            'age' : sub.age,
+            'ID' : sub.img_name,
+            'label' : sub.label,
+            'Dataset' : sub.setname,
+            'stage' : sub.settype,
+            'path' : sub.img_path
         }
+        if sub.mask_path != None: # if we have masks
+            subject_dict['mask'] = tio.LabelMap(sub.mask_path,reader=sitk_reader)
+        else: # if we don't have masks, we create a mask from the image
+            # print(f"Creating mask from image for {sub.img_path}")
 
-        # Create the subject and apply transforms
+            subject_dict['mask'] = tio.LabelMap(tensor=tio.ScalarImage(sub.img_path,reader=sitk_reader).data>0)
+
         subject = tio.Subject(subject_dict)
-        transformed_subject = get_transform(cfg)(subject)
-        subjects.append(transformed_subject)
+        subjects.append(subject)
+    
+    if preload: 
+        manager = Manager()
+        cache = DatasetCache(manager)
+        ds = tio.SubjectsDataset(subjects, transform = get_transform(cfg))
+        ds = preload_wrapper(ds, cache, augment = get_augment(cfg))
+    else: 
+        ds = tio.SubjectsDataset(subjects, transform = tio.Compose([get_transform(cfg),get_augment(cfg)]))
+        
+    if cfg.spatialDims == '2D':
+        # print("Converting to 2D slices")
 
-    return tio.SubjectsDataset(subjects)  # Note: Changed from transformed_subject to subjects
+        slice_ind = cfg.get('startslice',None) 
+        seq_slices = cfg.get('sequentialslices',None) 
+        ds = vol2slice(ds,cfg,slice=slice_ind,seq_slices=seq_slices)
+    return ds
+ 
+## got it from https://discuss.pytorch.org/t/best-practice-to-cache-the-entire-dataset-during-first-epoch/19608/12
+class DatasetCache(object):
+    def __init__(self, manager, use_cache=True):
+        self.use_cache = use_cache
+        self.manager = manager
+        self._dict = manager.dict()
+
+    def is_cached(self, key):
+        if not self.use_cache:
+            return False
+        return str(key) in self._dict
+
+    def reset(self):
+        self._dict.clear()
+
+    def get(self, key):
+        if not self.use_cache:
+            raise AttributeError('Data caching is disabled and get funciton is unavailable! Check your config.')
+        return self._dict[str(key)]
+
+    def cache(self, key, subject):
+        # only store if full data in memory is enabled
+        if not self.use_cache:
+            return
+        # only store if not already cached
+        if str(key) in self._dict:
+            return
+        self._dict[str(key)] = (subject)
+
+class preload_wrapper(Dataset):
+    def __init__(self,ds,cache,augment=None):
+            self.cache = cache
+            self.ds = ds
+            self.augment = augment
+    def reset_memory(self):
+        self.cache.reset()
+    def __len__(self):
+            return len(self.ds)
+            
+    def __getitem__(self, index):
+        if self.cache.is_cached(index) :
+            subject = self.cache.get(index)
+        else:
+            subject = self.ds.__getitem__(index)
+            self.cache.cache(index, subject)
+        if self.augment:
+            subject = self.augment(subject)
+        return subject
+
+class vol2slice(Dataset):
+    def __init__(self,ds,cfg,onlyBrain=False,slice=None,seq_slices=None):
+            self.ds = ds
+            self.onlyBrain = onlyBrain
+            self.slice = slice
+            self.seq_slices = seq_slices
+            self.counter = 0 
+            self.ind = None
+            self.cfg = cfg
+            print(f"Created vol2slice with {len(ds)} volumes")
+
+    def __len__(self):
+            return len(self.ds)
+            
+    def __getitem__(self, index):
+        # print(f"Getting slice for volume {index}")
+
+        subject = self.ds.__getitem__(index)
+        if self.onlyBrain:
+            start_ind = None
+            for i in range(subject['vol'].data.shape[-1]):
+                if subject['mask'].data[0,:,:,i].any() and start_ind is None: # only do this once
+                    start_ind = i 
+                if not subject['mask'].data[0,:,:,i].any() and start_ind is not None: # only do this when start_ind is set
+                    stop_ind = i 
+            low = start_ind
+            high = stop_ind
+        else: 
+            low = 0
+            high = subject['vol'].data.shape[-1]
+        if self.slice is not None:
+            self.ind = self.slice
+            if self.seq_slices is not None:
+                low = self.ind
+                high = self.ind + self.seq_slices
+                self.ind = torch.randint(low,high,size=[1])
+        else:
+            if self.cfg.get('unique_slice',False): # if all slices in one batch need to be at the same location
+                if self.counter % self.cfg.batch_size == 0 or self.ind is None: # only change the index when changing to new batch
+                    self.ind = torch.randint(low,high,size=[1])
+                self.counter = self.counter +1
+            else: 
+                self.ind = torch.randint(low,high,size=[1])
+                # print(f"Selected slice {self.ind} for volume {index}")
+
+        subject['ind'] = self.ind
+
+        subject['vol'].data = subject['vol'].data[...,self.ind]
+        subject['mask'].data = subject['mask'].data[...,self.ind]
+
+        return subject
 
 
 def get_transform(cfg): # only transforms that are applied once before preloading
-    h, w, d = tuple(cfg.get('imageDim',(192,192,160)))
+    h, w, d = tuple(cfg.get('imageDim',(160,192,160)))
 
     if not cfg.resizedEvaluation: 
         exclude_from_resampling = ['vol_orig','mask_orig','seg_orig']
@@ -102,6 +216,38 @@ def get_transform(cfg): # only transforms that are applied once before preloadin
 
     return preprocess 
 
+def get_augment(cfg): # augmentations that may change every epoch
+    augmentations = []
+
+    # individual augmentations
+    if cfg.get('random_bias',False):
+        augmentations.append(tio.RandomBiasField(p=0.25))
+    if cfg.get('random_motion',False):
+        augmentations.append(tio.RandomMotion(p=0.1))
+    if cfg.get('random_noise',False):
+        augmentations.append(tio.RandomNoise(p=0.5))
+    if cfg.get('random_ghosting',False):
+        augmentations.append(tio.RandomGhosting(p=0.5))
+    if cfg.get('random_blur',False):
+        augmentations.append(tio.RandomBlur(p=0.5))
+    if cfg.get('random_gamma',False):        
+        augmentations.append(tio.RandomGamma(p=0.5))
+    if cfg.get('random_elastic',False):
+        augmentations.append(tio.RandomElasticDeformation(p=0.5))
+    if cfg.get('random_affine',False):
+        augmentations.append(tio.RandomAffine(p=0.5))
+    if cfg.get('random_flip',False):
+        augmentations.append(tio.RandomFlip(p=0.5))
+
+    # policies/groups of augmentations
+    if cfg.get('aug_intensity',False): # augmentations that change the intensity of the image rather than the geometry
+        augmentations.append(tio.RandomGamma(p=0.5))
+        augmentations.append(tio.RandomBiasField(p=0.25))
+        augmentations.append(tio.RandomBlur(p=0.25))
+        augmentations.append(tio.RandomGhosting(p=0.5))
+
+    augment = tio.Compose(augmentations)
+    return augment
 def sitk_reader(path):
                 
     image_nii = sitk.ReadImage(str(path), sitk.sitkFloat32)
@@ -109,25 +255,3 @@ def sitk_reader(path):
         image_nii = sitk.CurvatureFlow(image1 = image_nii, timeStep = 0.125, numberOfIterations = 3)
     vol = sitk.GetArrayFromImage(image_nii).transpose(2,1,0)
     return vol, None
-
-
-
-'''
-When you call `test_dataloader()`, you'll get a PyTorch DataLoader that yields batches where each batch contains:
-
-- `batch['vol'][tio.DATA]`: tensor of shape `[1, 1, H, W, 4]`
-  - First 1: batch size (always 1 in test)
-  - Second 1: channels
-  - H, W: height and width after preprocessing
-  - 4: your selected slices (or however many you specified in slice_indices)
-
-- `batch['vol_orig'][tio.DATA]`: Same shape, but with original intensities
-- `batch['mask'][tio.DATA]`: Same shape but with mask values
-- Other metadata like 'age', 'ID', etc.
-
-So whereas before each item had shape `[1, 1, H, W, D]` where D was the full depth of the volume, now D is just 4 (or your chosen number of slices), representing just those specific selected slices after they've gone through all the same preprocessing as before.
-
-Would you like me to add some print statements to the code to verify these shapes when it runs?
-
-
-'''
