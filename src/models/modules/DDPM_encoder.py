@@ -4,9 +4,6 @@ import torchvision
 from src.models.modules.spark.Spark_2D import SparK_2D_encoder
 
 def get_encoder(cfg):
-    print('='*10)
-    print('IN get encoder')
-    print('='*10)
     """
     Available backbones (some of them): 
     Resnet: 

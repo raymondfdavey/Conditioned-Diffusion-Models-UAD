@@ -94,7 +94,7 @@ def build_encoder(name: str, cond_dim:int, input_size: int, sbn=False, drop_path
     if 'global_pool' in kwargs:
         kwargs.pop('global_pool')
     kwargs['num_classes'] = cond_dim
-    print(f'[sparse_cnn] model kwargs={kwargs}')
+    # print(f'[sparse_cnn] model kwargs={kwargs}')
     cnn = create_model(name,in_chans=1, **kwargs)
 
     if not isinstance(downsample_raito, int) or not isinstance(fea_dim, int):
@@ -104,7 +104,7 @@ def build_encoder(name: str, cond_dim:int, input_size: int, sbn=False, drop_path
             downsample_raito = input_size // o.shape[-1]
             fea_dim = o.shape[1]
             cnn.train()
-        print(f'[sparse_cnn] downsample_raito={downsample_raito}, fea_dim={fea_dim}')
+        # print(f'[sparse_cnn] downsample_raito={downsample_raito}, fea_dim={fea_dim}')
     
     return cnn
 

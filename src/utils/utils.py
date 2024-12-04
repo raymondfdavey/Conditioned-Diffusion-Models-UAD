@@ -9,6 +9,7 @@ import rich.tree
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities import rank_zero_only
 import yaml 
+import wandb
 
 def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
     """Initializes multi-GPU-friendly python logger."""
@@ -41,17 +42,20 @@ def extras(config: DictConfig) -> None:
 
     # disable python warnings if <config.ignore_warnings=True>
     if config.get("ignore_warnings"):
-        log.info("Disabling python warnings! <config.ignore_warnings=True>")
+        # log.info("Disabling python warnings! <config.ignore_warnings=True>")
         warnings.filterwarnings("ignore")
-
+    # Suppress PyTorch and PyTorch Lightning logs if specified in the config
+    if config.get("suppress_logs", True):  # Default to True to suppress logs
+        logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+        logging.getLogger("torch").setLevel(logging.ERROR)
     # set <config.trainer.fast_dev_run=True> if <config.debug=True>
     if config.get("debug"):
-        log.info("Running in debug mode! <config.debug=True>")
+        # log.info("Running in debug mode! <config.debug=True>")
         config.trainer.fast_dev_run = True
 
     # force debugger friendly configuration if <config.trainer.fast_dev_run=True>
     if config.trainer.get("fast_dev_run"):
-        log.info("Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>")
+        # log.info("Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>")
         # Debuggers don't like GPUs or multiprocessing
         if config.trainer.get("gpus"):
             config.trainer.gpus = 0
@@ -114,7 +118,6 @@ def log_hyperparameters(
     model: pl.LightningModule,
     datamodule: pl.LightningDataModule,
     trainer: pl.Trainer,
-    callbacks: List[pl.Callback],
     logger: List[pl.loggers.LightningLoggerBase],
 ) -> None:
     """This method controls which parameters from Hydra config are saved by Lightning loggers.
@@ -152,23 +155,6 @@ def log_hyperparameters(
     trainer.logger.log_hyperparams = empty
 
 
-def finish(
-    config: DictConfig,
-    model: pl.LightningModule,
-    datamodule: pl.LightningDataModule,
-    trainer: pl.Trainer,
-    callbacks: List[pl.Callback],
-    logger: List[pl.loggers.LightningLoggerBase],
-) -> None:
-    """Makes sure everything closed properly."""
-
-    # without this sweeps with wandb logger might crash!
-    for lg in logger:
-        if isinstance(lg, pl.loggers.wandb.WandbLogger):
-            import wandb
-
-            wandb.finish()
-
 def summarize(eval_dict, prefix): # removes list entries from dictionary for faster logging
     # for set in list(eval_dict) : 
     eval_dict_new = {}
@@ -189,17 +175,10 @@ def get_checkpoint(cfg, path):
     
     checkpoint_path = path
     checkpoint_to_load = cfg.get("checkpoint",'last') # default to last.ckpt 
-    print('---------------')
-    print(f'GETTING CHECKPOINT from {path} !!!!!!!!!!!!!!!!!!')
-    print(path)
-    print(checkpoint_to_load)
     
     all_checkpoints = os.listdir(checkpoint_path + '/checkpoints')
-    print(all_checkpoints)
-    print(path)
     hparams = get_yaml(path+'/csv//hparams.yaml')
     wandbID = hparams['run_id']
-    print(wandbID)
     checkpoints = {}
     
     
@@ -225,8 +204,6 @@ def get_checkpoint(cfg, path):
             if not 'best_k' in checkpoint_to_load: # best_k loads the k best checkpoints 
                 checkpoints[fold] = checkpoints[fold][0] # get only the best (first) checkpoint of that fold
     
-    print(checkpoints)
-    print('---------------')
     
     return wandbID, checkpoints
 

@@ -263,8 +263,10 @@ class SparK_2D(nn.Module):
 
 class SparK_2D_encoder(nn.Module):
     def __init__(self, cfg):
-        print('INITIALISING SPARK ENCODER')
         super().__init__()
+        print('='*10)
+        print('INITIALISING SparK_2D_encoder')
+        print('='*10)
         sbn=False
         self.pyramid=cfg.get('pyramid',4)  # 1 for single-scale pre-training; 4 for full-scale pre-training
         self.cfg = cfg
@@ -279,10 +281,7 @@ class SparK_2D_encoder(nn.Module):
         
 
     def forward(self, x):
-        print('IN SPARK ENCODER FORWARDDD')
-        print('x in shape', x.shape)
         features = self.encoder(x)
-        print('out features', features.shape)
         return features
 
 def _make_divisible(v, divisor=8, min_value=None):

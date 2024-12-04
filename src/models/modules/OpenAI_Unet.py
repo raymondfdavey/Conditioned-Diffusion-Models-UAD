@@ -538,18 +538,12 @@ class UNetModel(nn.Module):
         num_mem_kv=0
     ):
         super().__init__()
-        #print('='*10)
-        #print('INITIALISING UNET')
-        #print('='*10)
+        print('='*10)
+        print('INITIALISING UNET')
+        print('='*10)
         
-        #print('*'*50)
-        #print('INITIALISING FEATURES')
-        #print('*'*50)
         self.features_info = {}
         
-        for key, value in locals().items():
-            if key != 'self':  # Exclude 'self' from printing
-                print(f"{key}: {value}")
         if use_spatial_transformer:
             assert context_dim is not None, 'Fool!! You forgot to include the dimension of your cross-attention conditioning...'
 
@@ -591,10 +585,7 @@ class UNetModel(nn.Module):
         else: 
             fac = 1
             time_embed_dim = model_channels * 4 * fac
-        
-        #print('='*10)
-        #print('making time_embed layer')
-        #print('='*10)
+
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim//fac),
             nn.SiLU(),
@@ -617,7 +608,6 @@ class UNetModel(nn.Module):
 
         for level, mult in enumerate(channel_mult):
             for resb in range(num_res_blocks):
-                #print(f'{resb=}')
                 layers = [
                     ResBlock(
                         ch,
@@ -641,7 +631,6 @@ class UNetModel(nn.Module):
                         num_heads = ch // num_head_channels
                         dim_head = num_head_channels
                     if legacy:
-                        #num_heads = 1
                         dim_head = ch // num_heads if use_spatial_transformer else num_head_channels
                     layers.append(
                         AttentionBlock(
@@ -861,7 +850,6 @@ class UNetModel(nn.Module):
         h = x
         #! Track all block outputs
         
-        #print('\ninputblocks')
         for i, module in enumerate(self.input_blocks):
             # Before processing
             block_info = {

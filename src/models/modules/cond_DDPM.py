@@ -412,7 +412,7 @@ class GaussianDiffusion(nn.Module):
             pred_noise = model_output
             x_start = self.predict_start_from_noise(x, t, model_output)
             x_start = maybe_clip(x_start)
-        #! THIS ONE IS WHAT HAPPENS PREDICT IMAGE START
+
         elif self.objective == 'pred_x0':
             pred_noise = self.predict_noise_from_start(x, t, model_output)
             x_start = model_output
@@ -572,9 +572,6 @@ class GaussianDiffusion(nn.Module):
             'shape': tuple(x_start.shape), 
             }
 
-        print('i am in p_losses in guassian which seems to be crucial to everything')
-        print('conditioning vector shape: ', cond.shape)
-        # print('conditioning vector: ', cond)
         b, c, h, w = x_start.shape
         noise = default(noise, lambda: torch.randn_like(x_start)) # some noise with zero mean and unit variance
 
@@ -592,8 +589,6 @@ class GaussianDiffusion(nn.Module):
             'shape': tuple(x.shape), 
             }
         
-        print('in plosses i am getting a noisy image x')
-        print('x shape: ', x.shape)
         
         if exists(box): # if box is not None, we only want to denoise the box region
             x_patch = []
@@ -603,11 +598,7 @@ class GaussianDiffusion(nn.Module):
             for i in range(x.shape[0]):
                 x[i, :, box[i,1]:box[i,3], box[i,0]:box[i,2]] = x_patch[i]
 
-        print('getting model out')
-        #! ACTUAL MODEL CALL
         model_out, unet_info = self.model(x, t, cond = cond) # predict the noise that has been added to x_start or directly predict x_start from the noisy x, conditioned by the timestep t, cond
-        print('model out shape: ', model_out.shape)
-        # print('model out: ', model_out)
         
         combined_info = {**other_info, **unet_info} 
         combined_info['model_out'] = {
@@ -652,7 +643,6 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, img, t=None, *args, **kwargs):
         #! 
-        print('iAM IN THE FORWARD METHOD OF THE WEIRD GUASSIAN IN cond_DDPM.py. I WILL BE CALLING p_losses')
         b, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long() if t is None else (torch.ones([b],device=device)*t).long()
 

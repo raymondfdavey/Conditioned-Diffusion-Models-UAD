@@ -19,9 +19,9 @@ datamodule:
 model:
   cfg: 
     #!
-    noise_ensemble: True
+    noise_ensemble: False
     step_ensemble: [250,500,750]
-    test_timesteps: 200
+    test_timesteps: 500
     dim_mults: [1,2,2]
     unet_dim: 128
     backbone: Spark_Encoder_2D
