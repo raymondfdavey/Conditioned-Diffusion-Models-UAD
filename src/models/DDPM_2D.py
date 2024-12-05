@@ -26,7 +26,7 @@ import matplotlib.colors as colors
 
 
 class DDPM_2D(LightningModule):
-    def __init__(self,cfg,prefix=None):
+    def __init__(self,cfg,prefix=None, encoder_ckpt_path=None):
         super().__init__()
         print('='*10)
         print('INITIALISING DDPM_2D')
@@ -78,10 +78,10 @@ class DDPM_2D(LightningModule):
         p2_loss_weight_gamma = cfg.get('p2_gamma',0),
         cfg=cfg
         )
-        
+        print(encoder_ckpt_path)
         if cfg.get('pretrained_encoder',False): # load pretrained encoder from cfg.modelpath
             assert cfg.get('encoder_path',None) is not None
-            state_dict_pretrained = torch.load(cfg.get('encoder_path',None))['state_dict']
+            state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
             new_statedict = OrderedDict()
             for key in zip(state_dict_pretrained): 
                 if 'slice_encoder' in key[0] :

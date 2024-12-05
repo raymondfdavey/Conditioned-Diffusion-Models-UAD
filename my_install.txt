@@ -2,3 +2,10 @@
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda activate cddpm
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda install pytorch=1.13.1 torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
 (cddpm) rd81@cs31c025338:~/projects/diffusion-uad$ conda env update -f environment.yml
+
+
+UPDATE!
+
+so the encironment_working and environment_working_full are more recent versions that I know are working on the linux mmachines in the lab.
+
+i'd use the fullest one if on an actual lab machine, otherwise the no builds on unix
