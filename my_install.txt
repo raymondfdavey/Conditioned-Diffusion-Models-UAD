@@ -9,3 +9,11 @@ UPDATE!
 so the encironment_working and environment_working_full are more recent versions that I know are working on the linux mmachines in the lab.
 
 i'd use the fullest one if on an actual lab machine, otherwise the no builds on unix
+
+RUN USING:
+
+python run.py experiment=cDDPM/DDPM_cond_spark_2D experiment_name=STILL_SETTING_UP
+
+where this will result in logs in the folliwung:
+
+/home/rd81/projects/experiment_logs/STILL_SETTING_UP_2024-12-05_09-47-34

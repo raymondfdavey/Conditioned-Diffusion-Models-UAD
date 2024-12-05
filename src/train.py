@@ -23,12 +23,8 @@ warnings.filterwarnings(
 full_model_ckpt_path = '/home/rd81/projects/trained_models/full_model_epoch-719_step-8639.ckpt'
 encoder_ckpt_path='/home/rd81/projects/trained_models/spark_epoch-1089_step-13079.ckpt'
 
-experiment_name='STILL_SETTING_UP'
-
-
 @hydra.main(config_path='configs', config_name='config') # Hydra decorator
 def train(cfg: DictConfig): 
-    cfg['experiment_name']=experiment_name
     seed_everything(cfg.seed, workers=True)
     
     model: LightningModule = hydra.utils.instantiate(cfg.model,prefix='1/', encoder_ckpt_path=encoder_ckpt_path) 
@@ -41,7 +37,7 @@ def train(cfg: DictConfig):
     datamodule.setup()
 
     model.test = 'consistency'
-    model.test = None
+    # model.test = None
     whatami = trainer.test(
         model=model,
         dataloaders=datamodule.test_eval_dataloader(),

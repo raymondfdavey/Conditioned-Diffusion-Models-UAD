@@ -21,7 +21,9 @@ import wandb
 import monai
 from torch.nn import functional as F
 from PIL import Image
-
+from omegaconf import DictConfig, OmegaConf, open_dict
+from hydra.core.hydra_config import HydraConfig
+import gzip
 import matplotlib.colors as colors
 
 
@@ -34,10 +36,25 @@ class DDPM_2D(LightningModule):
         self.prefix = prefix
         self.cfg = cfg
         
+        #! initialising new encoder and loading in pretrained encoder weights
         with open_dict(self.cfg):
             self.cfg['cond_dim'] = cfg.get('unet_dim',64) * 4
             self.encoder, out_features = get_encoder(cfg)
+        state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
+        new_statedict = OrderedDict()
+        for key in zip(state_dict_pretrained): 
+            if 'slice_encoder' in key[0] :
+                new_key = 'slice_encoder'+ key[0].split('encoder')[-1]
+                new_statedict[new_key] = state_dict_pretrained[key[0]]
+            elif 'sparse_encoder' in key[0] :
+                if not 'fc.weight' in key[0] and not 'fc.bias' in key[0]: # remove fc layer
+                    new_key = 'encoder' + key[0].split('sp_cnn')[-1]
+                    new_statedict[new_key] = state_dict_pretrained[key[0]]
+            else:
+                new_statedict[key[0]] = state_dict_pretrained[key[0]]
+        self.encoder.load_state_dict(new_statedict,strict=False)
 
+        #! initialising new unet (weights added in train.py - for some reason)
         model = OpenAI_UNet(
                             image_size =  (int(cfg.imageDim[0] / cfg.rescaleFactor),int(cfg.imageDim[1] / cfg.rescaleFactor)),
                             in_channels = 1,
@@ -61,12 +78,14 @@ class DDPM_2D(LightningModule):
                             use_spatial_transformer=cfg.get('spatial_transformer',False),    
                             transformer_depth=1,                            
                             )
+        
         model.convert_to_fp16()
 
         timesteps = cfg.get('timesteps',1000)
         sampling_timesteps = cfg.get('sampling_timesteps',timesteps)
         self.test_timesteps = cfg.get('test_timesteps',150) 
 
+        #! initialising new diffusion model (which takes unet as a param - for some reason)
         self.diffusion = GaussianDiffusion(
         model,
         image_size = (int(cfg.imageDim[0] / cfg.rescaleFactor),int(cfg.imageDim[1] / cfg.rescaleFactor)), # only important when sampling
@@ -78,22 +97,6 @@ class DDPM_2D(LightningModule):
         p2_loss_weight_gamma = cfg.get('p2_gamma',0),
         cfg=cfg
         )
-        print(encoder_ckpt_path)
-        if cfg.get('pretrained_encoder',False): # load pretrained encoder from cfg.modelpath
-            assert cfg.get('encoder_path',None) is not None
-            state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
-            new_statedict = OrderedDict()
-            for key in zip(state_dict_pretrained): 
-                if 'slice_encoder' in key[0] :
-                    new_key = 'slice_encoder'+ key[0].split('encoder')[-1]
-                    new_statedict[new_key] = state_dict_pretrained[key[0]]
-                elif 'sparse_encoder' in key[0] :
-                    if not 'fc.weight' in key[0] and not 'fc.bias' in key[0]: # remove fc layer
-                        new_key = 'encoder' + key[0].split('sp_cnn')[-1]
-                        new_statedict[new_key] = state_dict_pretrained[key[0]]
-                else:
-                    new_statedict[key[0]] = state_dict_pretrained[key[0]]
-            self.encoder.load_state_dict(new_statedict,strict=False)
         
         self.save_hyperparameters()
 
@@ -109,61 +112,7 @@ class DDPM_2D(LightningModule):
         print('STARTING TESTING...')
         print('='*10)
         self.new_size = [190,190,160]
-
-    def run_1000_repeats(self, input, data_orig, data_seg, data_mask, final_volume, n_runs=1000, n_slices=4):
-        #! MORNING RAY!!!
-        #! YOU JUST NEED TO CHECK THE DIMENSIONALITY OF YOUR STORAGE THING AND THEN THE DIFFERENT DIMENSIONS OF THE DIFFERENT BITS.
-        assert input.shape == (n_slices, 1, 96, 96), f"Expected input shape (4, 1, 96, 96), got {input.shape}"
-
-        storage = setup_storage(n_runs, n_slices)
-        for run_idx in range(n_runs):
-            storage['input'][run_idx] = input
-
-            features = self(input)
-
-            noise = gen_noise(self.cfg, input.shape).to(self.device)
-            _, reco, unet_details = self.diffusion(input, cond=features, 
-                                                        t=self.test_timesteps-1, 
-                                                        noise=noise)
-
-                    
-                    
-            final_volume = reco.clone().squeeze()
-            final_volume = final_volume.permute(1,2,0) # to HxWxD
-            final_volume = final_volume.unsqueeze(0)
-            final_volume = final_volume.unsqueeze(0)
-
-            # Resize the images if desired
-            if not self.cfg.resizedEvaluation: # in case of full resolution evaluation 
-                final_volume = F.interpolate(final_volume, size=self.new_size, mode="trilinear",align_corners=True).squeeze() # resize
-            else: 
-                final_volume = final_volume.squeeze()
-            
-            # calculate the residual image
-            if self.cfg.get('residualmode','l1'): # l1 or l2 residual
-                diff_volume = torch.abs((data_orig-final_volume))
-            else:
-                diff_volume = (data_orig-final_volume)**2
-
-            
-            data_mask[data_mask > 0] = 1
-            diff_volume = apply_brainmask_volume(diff_volume.cpu(), data_mask.squeeze().cpu())   
-            diff_volume = torch.from_numpy(apply_3d_median_filter(diff_volume.numpy().squeeze(),kernelsize=self.cfg.get('kernelsize_median',5))).unsqueeze(0) # bring 
-            
-            
-            
-            key_points = extract_key_points(unet_details)
-            for key, tensor in key_points.items():
-                if key in storage['features']:
-                    storage['features'][key][run_idx] = tensor
-                elif key in storage['embeddings']:
-                    storage['embeddings'][key][run_idx] = tensor
-
-
-        return storage
-
     
-        
     def test_step(self, batch: Any, batch_idx: int):        
         self.dataset = batch['Dataset']
         input = batch['vol'][tio.DATA]
@@ -172,12 +121,12 @@ class DDPM_2D(LightningModule):
         data_mask = batch['mask_orig'][tio.DATA]
         ID = batch['ID']
         self.stage = batch['stage']
-        latentSpace = []
         self.cfg['noise_ensemble'] = False
                         
                         
         total_slices = input.size(4)
-        percentages = [0.2, 0.4, 0.6, 0.8]  # Can adjust these values
+        percentages = [0.4, 0.6]  # Can adjust these values
+        n_slices = len(percentages)
         slice_indices = [int(total_slices * p) for p in percentages]
         input = input[..., slice_indices]
         data_orig = data_orig[..., slice_indices]
@@ -188,76 +137,156 @@ class DDPM_2D(LightningModule):
         input = input.squeeze(0).permute(3,0,1,2) # [B,C,H,W,D] -> [D,C,H,W]
     
         if self.test == 'consistency':
-            self.run_500_repeats(input, data_seg, data_mask, final_volume)
+            data = self.run_repeats(input, data_orig, data_seg, data_mask, ID, n_runs=700, n_slices=n_slices, save_images_to_disk=False)
+            self.save_repeat_run_data(data, ID, n_slices)
         else:
-            print(input.shape)
-            features = self(input)
-            print(features.shape)
-            features_single = features
-            latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
-            noise = gen_noise(self.cfg, input.shape).to(self.device)
+            data = self.run_normal(input, data_orig, data_seg, data_mask, ID, save_images_to_disk=True)
             
-            #! MODEL CALL
-            loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
-            
-            # reassamble the reconstruction volume
-            final_volume = reco.clone().squeeze()
-            final_volume = final_volume.permute(1,2,0) # to HxWxD
-            final_volume = final_volume.unsqueeze(0)
-            final_volume = final_volume.unsqueeze(0)
-            # print('unsqueeze final volume shape (DDPM2d)', final_volume.shape)
+        self.log('test_metric', 100)  # This will now show up in trainer.test() results
+    
+    def save_repeat_run_data(self, storage, ID, n_slices):
+        print('='*10)
+        print(f'Saving run data')
+        save_path = HydraConfig.get().run.dir
+        torch.save(storage, f"{save_path}/runs_data_{ID}_{n_slices}_slices.pt")
+        print(f'Run data saved to {f"{save_path}/runs_data_{ID}_{n_slices}_slices.pt"}')
+        print('='*10)
+        
+    def run_normal(self, input, data_orig, data_seg, data_mask, ID, save_images_to_disk=True):
+        print('='*10)
+        print(f'RUNNING NORMAL TEST: SINGLE RUN')
+        print('='*10)
+        features = self(input)
+        noise = gen_noise(self.cfg, input.shape).to(self.device)
+        
+        #! MODEL CALL
+        loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
+        
+        final_volume = reco.clone().squeeze()
+        final_volume = final_volume.permute(1,2,0) # to HxWxD
+        final_volume = final_volume.unsqueeze(0)
+        final_volume = final_volume.unsqueeze(0)
+        
+        key_points = extract_key_points(unet_details)
+        # print_key_details(key_points, 1)
+        
+        # Resize the images if desired
+        if not self.cfg.resizedEvaluation: # in case of full resolution evaluation 
+            final_volume = F.interpolate(final_volume, size=self.new_size, mode="trilinear",align_corners=True).squeeze() # resize
+        else: 
+            final_volume = final_volume.squeeze()
+        
+        # calculate the residual image
+        if self.cfg.get('residualmode','l1'): # l1 or l2 residual
+            diff_volume = torch.abs((data_orig-final_volume))
+        else:
+            diff_volume = (data_orig-final_volume)**2
 
-            # print(unet_details['raw_embedding'])
-            key_points = extract_key_points(unet_details)
-            print_key_details(key_points, 1)
-            
-            # Resize the images if desired
-            if not self.cfg.resizedEvaluation: # in case of full resolution evaluation 
-                final_volume = F.interpolate(final_volume, size=self.new_size, mode="trilinear",align_corners=True).squeeze() # resize
-            else: 
-                final_volume = final_volume.squeeze()
-            
-            # calculate the residual image
-            if self.cfg.get('residualmode','l1'): # l1 or l2 residual
-                diff_volume = torch.abs((data_orig-final_volume))
-            else:
-                diff_volume = (data_orig-final_volume)**2
+        # move data to CPU
+        data_seg = data_seg.cpu() 
+        data_mask = data_mask.cpu()
+        diff_volume = diff_volume.cpu()
+        data_orig = data_orig.cpu()
+        final_volume = final_volume.cpu()
 
-            # move data to CPU
-            data_seg = data_seg.cpu() 
-            data_mask = data_mask.cpu()
-            diff_volume = diff_volume.cpu()
-            data_orig = data_orig.cpu()
-            final_volume = final_volume.cpu()
-            print(final_volume.shape)
-            print()
-            data_mask[data_mask > 0] = 1
-            diff_volume = apply_brainmask_volume(diff_volume.cpu(), data_mask.squeeze().cpu())   
-            diff_volume = torch.from_numpy(apply_3d_median_filter(diff_volume.numpy().squeeze(),kernelsize=self.cfg.get('kernelsize_median',5))).unsqueeze(0) # bring back to tensor
+        data_mask[data_mask > 0] = 1
+
+        diff_volume = apply_brainmask_volume(diff_volume.cpu(), data_mask.squeeze().cpu())   
+        diff_volume = torch.from_numpy(apply_3d_median_filter(diff_volume.numpy().squeeze(),kernelsize=self.cfg.get('kernelsize_median',5))).unsqueeze(0) # bring back to tensor
+        
+        if save_images_to_disk:
             save_images(self,diff_volume, data_orig, data_seg, data_mask, final_volume, ID)
-            self.log('test_metric', 100)  # This will now show up in trainer.test() results
+        
+    def run_repeats(self, input, data_orig, data_seg, data_mask, ID, n_runs=500, n_slices=4, save_images_to_disk=True):
+        print('='*10)
+        print(f'RUNNING TEST: REPEATS - {n_runs} runs, {n_slices} slices')
+        print('='*10)
+        
+        assert input.shape == (n_slices, 1, 96, 96), f"Expected input shape (4, 1, 96, 96), got {input.shape}"
+        storage=setup_storage(n_runs, n_slices)
 
+        for run_idx in range(n_runs):
+            print(f'Running iteration {run_idx + 1}/{n_runs}')
+            
+            storage['input'][run_idx] = input.squeeze(1)
+            storage['brain_masks'][run_idx] = data_mask.squeeze().permute(2, 0, 1)
+            
+            features = self(input)
+            storage['features_raw_embedding'][run_idx] = features
+            
+            
+            noise = gen_noise(self.cfg, input.shape).to(self.device)
+            storage['noise'][run_idx] = noise.squeeze(1)
+
+            
+            loss_diff, reco, unet_details = self.diffusion(input, cond=features, t=self.test_timesteps-1, noise=noise)
+            
+            
+            final_volume = reco.clone().squeeze(1)  # Just remove the channel dimension, keeps slices first!
+            storage['reconstructions'][run_idx] = final_volume
+            
+            final_volume_for_calc = final_volume.permute(1, 2, 0)  # -> [96, 96, 4]
+            final_volume_for_calc = final_volume_for_calc.unsqueeze(0).unsqueeze(0)  # -> [1, 1, 96, 96, 4]
+            if self.cfg.get('residualmode','l1'):
+                diff_volume = torch.abs((data_orig - final_volume_for_calc))
+            else:
+                diff_volume = (data_orig - final_volume_for_calc)**2
+            
+            
+            storage['differences'][run_idx] = diff_volume.squeeze().permute(2, 0, 1)
+
+            key_points = extract_key_points(unet_details)
+            # print_key_details(key_points, 1)
+            
+            storage['full_raw_embedding'][run_idx] = key_points['raw_embedding']['tensor']
+            
+            # Store UNet features
+            for key in storage['features'].keys():
+                if key in key_points:
+                    storage['features'][key][run_idx] = key_points[key]['tensor']
+            
+            # Store embeddings
+            for key in storage['embeddings'].keys():
+                if key in key_points:
+                    storage['embeddings'][key][run_idx] = key_points[key]['tensor']
+            
+            if save_images_to_disk:
+                # Save images will handle moving to CPU and post-processing
+                save_images_from_repeat(
+                    self, run_idx,
+                    diff_volume,
+                    data_orig,
+                    data_seg,
+                    data_mask,
+                    final_volume.permute(1, 2, 0),
+                    ID
+                )
+            
+            # Optional: Clear GPU cache after each run if memory is a concern
+            torch.cuda.empty_cache()
+        return storage
+            
     def on_test_end(self):
         print('='*10)
         print('FINISHED TESTING')
         print('='*10)
-
+        
+        
+        
 def setup_storage(n_runs, n_slices):
-    """
-    Set up comprehensive storage for diffusion runs including original images.
-    The original images will be identical across runs, but storing them helps validate
-    the experimental setup and provides a convenient reference point.
-    """
+
     storage = {
         # Input/Output Image Storage
-        'input': torch.zeros(n_runs, 4, 1, 96, 96),          # Original input slices
+        'input': torch.zeros(n_runs, n_slices, 96, 96),  # Removed the channel dimension
         'reconstructions': torch.zeros(n_runs, n_slices, 96, 96), # Reconstructed images
+        'noise': torch.zeros(n_runs, n_slices, 96, 96),
+        'features_raw_embedding': torch.zeros(n_runs, n_slices, 512), 
         'differences': torch.zeros(n_runs, n_slices, 96, 96),     # Difference maps
-        'final_volumes': torch.zeros(n_runs, n_slices, 96, 96),   # Final processed volumes
-        
-        # Segmentation and Mask Storage (for completeness)
-        'segmentations': torch.zeros(n_runs, n_slices, 96, 96),   # Segmentation masks
+        'full_raw_embedding': torch.zeros(n_runs, n_slices, 1024),
         'brain_masks': torch.zeros(n_runs, n_slices, 96, 96),     # Brain masks
+        
+        # # Segmentation and Mask Storage (for completeness)
+        # 'segmentations': torch.zeros(n_runs, n_slices, 96, 96),   # Segmentation masks
         
         # UNet Feature Storage
         'features': {
@@ -272,7 +301,6 @@ def setup_storage(n_runs, n_slices):
         
         # Embedding Storage
         'embeddings': {
-            'raw_embedding': torch.zeros(n_runs, n_slices, 1024),
             'down_post_1_embedding': torch.zeros(n_runs, n_slices, 256),
             'down_post_4_embedding': torch.zeros(n_runs, n_slices, 256),
             'down_post_8_embedding': torch.zeros(n_runs, n_slices, 512),
@@ -286,7 +314,7 @@ def setup_storage(n_runs, n_slices):
 
 def save_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None,  flow=None ):
     print('='*10)
-    print('SAVING IMAGES')
+    print('SAVING IMAGES - NORMAL RUN')
     print('='*10)
     
     ImagePathList = {
@@ -324,12 +352,81 @@ def save_images(self, diff_volume, data_orig, data_seg, data_mask, final_volume,
         # remove the white space around the chart
         plt.tight_layout()
         
-        if self.cfg.get('save_to_disc',True):
-            plt.savefig(os.path.join(ImagePathList['imagesGrid'], '{}_{}_Grid.png'.format(ID[0],j)),bbox_inches='tight')
+        plt.savefig(os.path.join(ImagePathList['imagesGrid'], '{}_{}_Grid.png'.format(ID[0],j)),bbox_inches='tight')
+
         # self.logger.experiment[0].log({'images/{}/{}_Grid.png'.format(self.dataset[0],j) : wandb.Image(plt)})
         plt.clf()
         plt.cla()
         plt.close()
+    print('='*10)
+    print(f"IMAGES SAVED TO {ImagePathList['imagesGrid']}")
+    print('='*10)
+        
+        
+        
+def save_images_from_repeat(self, run_idx, diff_volume, data_orig, data_seg, data_mask, final_volume, ID, diff_volume_KL=None, flow=None):
+    print('='*10)
+    print(f'Saving iteration {run_idx+1} images...')
+    
+    # Move tensors to CPU here
+    diff_volume = diff_volume.cpu()
+    data_orig = data_orig.cpu()
+    data_seg = data_seg.cpu()
+    data_mask = data_mask.cpu()
+    final_volume = final_volume.cpu()
+    
+    # Apply brain mask and filtering
+    data_mask[data_mask > 0] = 1
+    diff_volume = apply_brainmask_volume(diff_volume, data_mask.squeeze())
+    diff_volume = torch.from_numpy(
+        apply_3d_median_filter(
+            diff_volume.numpy().squeeze(),
+            kernelsize=self.cfg.get('kernelsize_median', 5)
+        )
+    ).unsqueeze(0)
+    
+    ImagePathList = {
+        'imagesGrid': os.path.join(os.getcwd(), 'grid')
+    }
+    
+    for key in ImagePathList:
+        if not os.path.isdir(ImagePathList[key]):
+            os.mkdir(ImagePathList[key])
+    for j in range(0, diff_volume.squeeze().shape[2], 1):
+        # create a figure of images with 1 row and 3 columns for subplots
+        fig, ax = plt.subplots(1, 3, figsize=(16, 4))
+        # change spacing between subplots
+        fig.subplots_adjust(wspace=0.0)
+        
+        # orig
+        ax[0].imshow(data_orig.squeeze()[..., j].rot90(3), 'gray')
+        # reconstructed
+        ax[1].imshow(final_volume[..., j].rot90(3).squeeze(), 'gray')
+        # difference
+        ax[2].imshow(diff_volume.squeeze()[:, ..., j].rot90(3), 'inferno',
+                    norm=colors.Normalize(vmin=0, vmax=diff_volume.max()+.01))
+        
+        # remove all the ticks and frames
+        for axes in ax:
+            axes.set_xticks([])
+            axes.set_yticks([])
+            for spine in axes.spines.values():
+                spine.set_visible(False)
+                
+        plt.tight_layout()
+        
+        if self.cfg.get('save_to_disc', True):
+            plt.savefig(
+                os.path.join(ImagePathList['imagesGrid'], 
+                           f'{ID[0]}_{j}_Grid_RUN_{run_idx}.png'),
+                bbox_inches='tight'
+            )
+            
+        plt.clf()
+        plt.cla()
+        plt.close()
+    print(f"Images saved to {ImagePathList['imagesGrid']}")
+    print('='*10)
 
 
 def print_key_details(key_points, indent):
