@@ -194,26 +194,15 @@ class vol2slice(Dataset):
 
 
 def get_transform(cfg): # only transforms that are applied once before preloading
-    h, w, d = tuple(cfg.get('imageDim',(160,192,160)))
+    h, w, d = tuple(cfg.get('imageDim',(192,192,160)))
 
-    if not cfg.resizedEvaluation: 
-        exclude_from_resampling = ['vol_orig','mask_orig','seg_orig']
-    else: 
-        exclude_from_resampling = None
+    exclude_from_resampling = None
         
-    if cfg.get('unisotropic_sampling',True):
-        preprocess = tio.Compose([
-        tio.CropOrPad((h,w,d),padding_mode=0),
-        tio.RescaleIntensity((0, 1),percentiles=(cfg.get('perc_low',1),cfg.get('perc_high',99)),masking_method='mask'),
-        tio.Resample(cfg.get('rescaleFactor',3.0),image_interpolation='bspline',exclude=exclude_from_resampling),#,exclude=['vol_orig','mask_orig','seg_orig']), # we do not want to resize *_orig volumes
-        ])
-
-    else: 
-        preprocess = tio.Compose([
-                tio.RescaleIntensity((0, 1),percentiles=(cfg.get('perc_low',1),cfg.get('perc_high',99)),masking_method='mask'),
-                tio.Resample(cfg.get('rescaleFactor',3.0),image_interpolation='bspline',exclude=exclude_from_resampling),#,exclude=['vol_orig','mask_orig','seg_orig']), # we do not want to resize *_orig volumes
-            ])
-
+    preprocess = tio.Compose([
+    tio.CropOrPad((h,w,d),padding_mode=0),
+    tio.RescaleIntensity((0, 1),percentiles=(1,99),masking_method='mask'),
+    tio.Resample(2,image_interpolation='bspline',exclude=exclude_from_resampling),#,exclude=['vol_orig','mask_orig','seg_orig']), # we do not want to resize *_orig volumes
+    ])
 
     return preprocess 
 

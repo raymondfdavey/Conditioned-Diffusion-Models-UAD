@@ -36,7 +36,7 @@ def train(cfg: DictConfig):
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, fold=0)
     datamodule.setup()
 
-    model.test = 'consistency'
+    model.test = ['consistency', 'augment']
     # model.test = None
     whatami = trainer.test(
         model=model,
