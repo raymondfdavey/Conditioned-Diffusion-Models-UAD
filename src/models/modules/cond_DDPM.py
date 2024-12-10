@@ -637,9 +637,9 @@ class GaussianDiffusion(nn.Module):
 
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         if self.objective == 'pred_noise':
-            return loss.mean(), unnormalize_to_zero_to_one(x - extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * model_out), unet_info 
+            return loss.mean(), unnormalize_to_zero_to_one(x - extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * model_out), unet_info, x 
         else:
-            return loss.mean(), unnormalize_to_zero_to_one(model_out), unet_info
+            return loss.mean(), unnormalize_to_zero_to_one(model_out), unet_info, x
 
     def forward(self, img, t=None, *args, **kwargs):
         #! 
