@@ -37,6 +37,10 @@ def train(cfg: DictConfig):
     datamodule.setup()
 
     # model.test = ['consistency', 'augment']
+    # model.test = ['consistency', 'augment']
+    # model.test = ['consistency', 'synthetic_tumour', 'augment']
+    # model.test = ['synthetic']
+    
     model.test = ['consistency']
     # model.test = None
     whatami = trainer.test(

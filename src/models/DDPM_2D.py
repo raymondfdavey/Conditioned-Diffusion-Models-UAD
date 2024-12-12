@@ -1,4 +1,4 @@
-from src.utils.ray_utils import setup_storage, save_images, save_images_from_repeat, apply_brainmask_volume, apply_3d_median_filter, extract_key_points, load_and_preprocess_tumor,  augment_with_tumor
+from src.utils.ray_utils import setup_storage, save_images, save_images_from_repeat, apply_brainmask_volume, apply_3d_median_filter, extract_key_points, load_and_preprocess_tumor,  augment_with_tumor, create_synthetic_batch
 from src.models.modules.cond_DDPM import GaussianDiffusion
 from src.models.modules.OpenAI_Unet import UNetModel as OpenAI_UNet
 from src.models.modules.DDPM_encoder import get_encoder
@@ -101,7 +101,10 @@ class DDPM_2D(LightningModule):
         self.new_size = [190,190,160]
     
     def test_step(self, batch: Any, batch_idx: int):
-                
+        if 'synthetic' in self.test:
+            batch = create_synthetic_batch(self.device)
+    
+        
         self.dataset = batch['Dataset']
         input = batch['vol'][tio.DATA]
         data_orig = batch['vol_orig'][tio.DATA]
@@ -127,19 +130,30 @@ class DDPM_2D(LightningModule):
         save_images_to_disk=True
         
         if 'consistency' in self.test:
-            n_runs = 100
-            n_images_to_save = 5
+            n_runs = 25
+            n_images_to_save = 4
+            self.test_timesteps = 801
             if 'augment' in self.test:
                 test_type='augmented_repeated'
                 print('in consistency + augment')
                 
-                tumor1_path = "/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_00002/tumor_only_57.png"
-                mask1_path = "/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_00002/tumor_mask_57.png"
-                tumor2_path = "/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_00002/tumor_only_85.png"
-                mask2_path = "/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_00002/tumor_mask_85.png"
+                image = '00002'
+                i1='57'
+                i2='85'
+                rotation=90
+                if 'synthetic_tumour' in self.test:
+                    tumor1_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/synthetic/synthetic_tumor_0.png"
+                    mask1_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/synthetic/synthetic_mask_0.png"
+                    tumor2_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/synthetic/synthetic_tumor_1.png"
+                    mask2_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/synthetic/synthetic_mask_1.png"
+                else:
+                    tumor1_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_{image}/tumor_only_{i1}.png"
+                    mask1_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_{image}/tumor_mask_{i1}.png"
+                    tumor2_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_{image}/tumor_only_{i2}.png"
+                    mask2_path = f"/home/rd81/projects/data-complete/extracted_tumour_images_and_segments/image_{image}/tumor_mask_{i2}.png"
 
                 # Load tumor and mask
-                tumor_tensors, mask_tensors = load_and_preprocess_tumor(tumor1_path, mask1_path, tumor2_path, mask2_path, scale_factor=1.5, device=self.device, erosion_pixels=2)
+                tumor_tensors, mask_tensors = load_and_preprocess_tumor(tumor1_path, mask1_path, tumor2_path, mask2_path, scale_factor=1.5, device=self.device, erosion_pixels=2, rotation=rotation)
                 augmented_input, segmentation_masks = augment_with_tumor(input, tumor_tensors, mask_tensors, n_slices)
                 # fig = visualize_results(input, augmented_input, tumor_tensors, mask_tensors)
                 data = self.run_repeats(augmented_input, data_orig, segmentation_masks, data_mask, SCAN_ID, n_runs=n_runs, n_slices=n_slices, save_images_to_disk=save_images_to_disk, n_images_to_save = n_images_to_save)

@@ -43,7 +43,7 @@ class IXI(LightningDataModule):
                 print('='*10)
                 print('USING DEBUG MODE WITH ONLY ONE MRI IMAGE')
                 print('='*10)
-                self.test_eval = create_dataset.Eval(self.csv['test'][0:1],self.cfg)
+                self.test_eval = create_dataset.Eval(self.csv['test'][5:6],self.cfg)
             else: 
                 self.test_eval = create_dataset.Eval(self.csv['test'],self.cfg)
     

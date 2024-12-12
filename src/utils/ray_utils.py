@@ -9,11 +9,151 @@ from PIL import Image
 import matplotlib.colors as colors
 import scipy
 from scipy import ndimage
+import torchio as tio
+
+def generate_and_save_synthetic_anomaly(save_dir):
+    """
+    Creates synthetic patterns and saves them as PNG files that can be used
+    in place of tumor images
+    """
+    import torch
+    import os
+    from PIL import Image
+    import numpy as np
+    
+    def create_synthetic_pattern(size=96, pattern_type='circles'):
+        pattern = torch.zeros((size, size))
+        mask = torch.zeros((size, size))
+        
+        center = size // 2
+        
+        if pattern_type == 'circles':
+            # Create concentric circles with different intensities
+            for r in [30, 20, 10]:
+                for i in range(size):
+                    for j in range(size):
+                        dist = ((i - center) ** 2 + (j - center) ** 2) ** 0.5
+                        if abs(dist - r) < 1:
+                            pattern[i, j] = 0.8
+                            mask[i, j] = 1
+        
+            # Add a central square
+            square_size = 15
+            start = center - square_size // 2
+            end = start + square_size
+            pattern[start:end, start:end] = 1.0
+            mask[start:end, start:end] = 1
+            
+        elif pattern_type == 'grid':
+            # Create a grid pattern
+            for i in range(0, size, 10):
+                pattern[i:i+2, :] = 0.8
+                pattern[:, i:i+2] = 0.8
+                mask[i:i+2, :] = 1
+                mask[:, i:i+2] = 1
+                
+        # Add the diagonal lines
+        for i in range(size):
+            if abs(i - center) < 30:  # Only add diagonals near center
+                pattern[i, i] = 0.6
+                pattern[i, size-1-i] = 0.6
+                mask[i, i] = 1
+                mask[i, size-1-i] = 1
+        
+        return pattern, mask
+    
+    # Ensure save directory exists
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Generate and save multiple pattern types
+    patterns = ['circles', 'grid']
+    saved_files = []
+    
+    for idx, pattern_type in enumerate(patterns):
+        pattern, pattern_mask = create_synthetic_pattern(96, pattern_type)
+        
+        # Convert to numpy arrays and scale to 0-255
+        pattern_np = (pattern.numpy() * 255).astype(np.uint8)
+        mask_np = (pattern_mask.numpy() * 255).astype(np.uint8)
+        
+        # Create PIL images
+        pattern_img = Image.fromarray(pattern_np)
+        mask_img = Image.fromarray(mask_np)
+        
+        # Save files
+        pattern_path = os.path.join(save_dir, f'synthetic_tumor_{idx}.png')
+        mask_path = os.path.join(save_dir, f'synthetic_mask_{idx}.png')
+        
+        pattern_img.save(pattern_path)
+        mask_img.save(mask_path)
+        
+        saved_files.append((pattern_path, mask_path))
+        
+    return saved_files
+
+
+def create_synthetic_batch(device):
+    """
+    Creates a synthetic batch matching torchio format for testing
+    Returns dict with same structure as regular batch
+    """
+    
+    # Create synthetic pattern
+    def create_pattern(size=96):
+        pattern = torch.zeros((size, size))
+        
+        # Create concentric circles
+        center = size // 2
+        for r in [30, 20, 10]:
+            for i in range(size):
+                for j in range(size):
+                    dist = ((i - center) ** 2 + (j - center) ** 2) ** 0.5
+                    if abs(dist - r) < 1:
+                        pattern[i, j] = 0.8
+        
+        # Add some diagonal lines
+        for i in range(size):
+            pattern[i, i] = 0.6
+            pattern[i, size-1-i] = 0.6
+            
+        # Add a central square
+        square_size = 15
+        start = center - square_size // 2
+        end = start + square_size
+        pattern[start:end, start:end] = 1.0
+        
+        return pattern
+    
+    # Create multiple slices
+    n_slices = 4
+    pattern_volume = torch.zeros((1, 1, 96, 96, n_slices))
+    mask_volume = torch.zeros((1, 1, 96, 96, n_slices))
+    
+    # Fill each slice with slightly different patterns
+    for i in range(n_slices):
+        pattern = create_pattern()
+        pattern_volume[0, 0, :, :, i] = pattern
+        
+        # Create mask (1 where pattern > 0)
+        mask_volume[0, 0, :, :, i] = (pattern > 0).float()
+    
+    # Create batch dictionary matching your expected format
+    batch = {
+        'Dataset': ['synthetic'],
+        'vol': {tio.DATA: pattern_volume.to(device)},
+        'vol_orig': {tio.DATA: pattern_volume.to(device)},
+        'seg_orig': {tio.DATA: mask_volume.to(device)},
+        'mask_orig': {tio.DATA: mask_volume.to(device)},
+        'ID': ['synthetic_test'],
+        'seg_available': True,
+        'stage': 'test'  # Added missing stage field
+    }
+    
+    return batch
 
 def setup_storage(n_runs, n_slices):
 
     storage = {
-        # Input/Output Image Storage
         'input': torch.zeros(1, n_slices, 96, 96),  # Removed the channel dimension
         'features_raw_embedding': torch.zeros(1, n_slices, 512), 
         'full_raw_embedding': torch.zeros(1, n_slices, 1024),
@@ -22,10 +162,7 @@ def setup_storage(n_runs, n_slices):
         
         'noisy_images': torch.zeros(n_runs, n_slices, 96, 96), # Reconstructed images
         'reconstructions': torch.zeros(n_runs, n_slices, 96, 96), # Reconstructed images
-        'noise': torch.zeros(n_runs, n_slices, 96, 96),
         'differences': torch.zeros(n_runs, n_slices, 96, 96),     # Difference maps
-        
-        # # Segmentation and Mask Storage (for completeness)
         
         # UNet Feature Storage
         'features': {
@@ -83,7 +220,7 @@ def save_images_from_repeat(self, input, run_idx, noise, noisy_image, diff_volum
     
     for j in range(0, diff_volume.squeeze().shape[2], 1):
         # create a figure of images with 1 row and 6 columns (or 5 if no segmentation)
-        n_cols = 7 if segmentation_mask is not None else 6
+        n_cols = 6 if segmentation_mask is not None else 5
         fig, ax = plt.subplots(1, n_cols, figsize=(20, 4))
         # change spacing between subplots
         fig.subplots_adjust(wspace=0.0)
@@ -92,26 +229,23 @@ def save_images_from_repeat(self, input, run_idx, noise, noisy_image, diff_volum
         ax[0].imshow(input.squeeze(1).permute(1, 2, 0)[..., j].rot90(3), 'gray')
         ax[0].set_title('Original')
         
-        ax[1].imshow(final_volume[..., j].rot90(3).squeeze(), 'gray')
-        ax[1].set_title('Reconstructed')
+        ax[1].imshow(noisy_image[j, 0].rot90(3), 'gray')
+        ax[1].set_title('Noisy_image')
         
-        ax[2].imshow(diff_volume.squeeze()[:, ..., j].rot90(3), 'inferno',
+        ax[2].imshow(final_volume[..., j].rot90(3).squeeze(), 'gray')
+        ax[2].set_title('Reconstructed')
+        
+        ax[3].imshow(diff_volume.squeeze()[:, ..., j].rot90(3), 'inferno',
                     norm=colors.Normalize(vmin=0, vmax=diff_volume.max()+.01))
-        ax[2].set_title('Difference')
-        
-        ax[3].imshow(noise[j, 0].rot90(3), 'gray')
-        ax[3].set_title('Noise')
-        
-        ax[4].imshow(noisy_image[j, 0].rot90(3), 'gray')
-        ax[4].set_title('Noisy_image')
-        
+        ax[3].set_title('Difference')
+                
         # mask
-        ax[5].imshow(data_mask.squeeze()[..., j].rot90(3), 'gray')
-        ax[5].set_title('Mask')
+        ax[4].imshow(data_mask.squeeze()[..., j].rot90(3), 'gray')
+        ax[4].set_title('Mask')
         
         if segmentation_mask is not None:
-            ax[6].imshow(segmentation_mask.squeeze(1).permute(1, 2, 0)[..., j].rot90(3), 'gray')
-            ax[6].set_title('Segmentation')
+            ax[5].imshow(segmentation_mask.squeeze(1).permute(1, 2, 0)[..., j].rot90(3), 'gray')
+            ax[5].set_title('Segmentation')
         
         # remove all the ticks and frames
         for axes in ax:
@@ -423,7 +557,7 @@ def resize_and_center(image, mask, scale_factor=1.5, erosion_pixels=2):
     
     return Image.fromarray(final_img), Image.fromarray(final_mask)
 
-def load_and_preprocess_tumor(tumor1_path, mask1_path, tumor2_path, mask2_path, device, scale_factor=1.5, erosion_pixels=2):
+def load_and_preprocess_tumor(tumor1_path, mask1_path, tumor2_path, mask2_path, device, scale_factor=1.5, erosion_pixels=2, rotation=90):
     """
     Load and preprocess two different tumors and their masks
     """
@@ -438,10 +572,10 @@ def load_and_preprocess_tumor(tumor1_path, mask1_path, tumor2_path, mask2_path, 
     tumor2, mask2 = resize_and_center(tumor2, mask2, scale_factor, erosion_pixels)
     
     # Rotate all images 90 degrees counterclockwise
-    tumor1 = tumor1.rotate(90, expand=True)
-    mask1 = mask1.rotate(90, expand=True)
-    tumor2 = tumor2.rotate(90, expand=True)
-    mask2 = mask2.rotate(90, expand=True)
+    tumor1 = tumor1.rotate(rotation, expand=True)
+    mask1 = mask1.rotate(rotation, expand=True)
+    tumor2 = tumor2.rotate(rotation, expand=True)
+    mask2 = mask2.rotate(rotation, expand=True)
     
     # Convert to tensors
     transform = transforms.ToTensor()
