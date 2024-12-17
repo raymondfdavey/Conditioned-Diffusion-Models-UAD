@@ -31,7 +31,7 @@ cfg:
 
   ## Evaluation
   saveOutputImages: True  
-  evalSeg: True
+  evalSeg: False
 
   ## General postprocessing
   pad: ${datamodule.cfg.pad}

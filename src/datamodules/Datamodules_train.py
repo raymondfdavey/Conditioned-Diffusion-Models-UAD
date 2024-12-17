@@ -48,7 +48,7 @@ class IXI(LightningDataModule):
                 self.csv[state] = self.csv[state][self.csv[state].img_name.isin(keep_t2['0'].str.replace('t2','t1'))]
                 self.csv[state]['img_path'] = self.csv[state]['img_path'].str.replace('t1','t2')
     def setup(self, stage: Optional[str] = None):
-        debug=True
+        debug=False
         # called on every GPU
         if not hasattr(self,'train'):
             if debug == True: # for debugging

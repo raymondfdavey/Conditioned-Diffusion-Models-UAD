@@ -17,9 +17,9 @@ from src.models.LDM.modules.diffusionmodules.util import timestep_embedding
 class DDPM_2D(LightningModule):
     def __init__(self,cfg,prefix=None):
         #! IN DDPM
-        print('='*10)
-        print('INITIALISING DDPM_2D')
-        print('='*10)
+        # print('='*10)
+        # print('INITIALISING DDPM_2D')
+        # print('='*10)
         super().__init__()
         
         self.cfg = cfg
@@ -27,10 +27,10 @@ class DDPM_2D(LightningModule):
         #! INITIALISES conditioning net
         if cfg.get('condition',True):
             with open_dict(self.cfg):
-                self.cfg['cond_dim'] = cfg.get('unet_dim',64) * 4
+                self.cfg['cond_dim'] = cfg.get('unet_dim',128)
 
             self.encoder, out_features = get_encoder(cfg)
-            print('encoder out features:', out_features)
+            # print('encoder out features:', out_features)
         else: 
             out_features = None
         #! INITIALISED UNET
@@ -77,9 +77,9 @@ class DDPM_2D(LightningModule):
         )
         
         if cfg.get('pretrained_encoder',False): # load pretrained encoder from cfg.modelpath
-            print('Loading pretrained encoder from: ', cfg.encoder_path)
+            # print('Loading pretrained encoder from: ', cfg.encoder_path)
             assert cfg.get('encoder_path',None) is not None
-            print('encoder path, ', cfg.get('encoder_path',None))
+            # print('encoder path, ', cfg.get('encoder_path',None))
             
             state_dict_pretrained = torch.load(cfg.get('encoder_path',None))['state_dict']
             new_statedict = OrderedDict()
@@ -103,18 +103,18 @@ class DDPM_2D(LightningModule):
         if self.cfg.get('condition',True):
             x = self.encoder(x)
             #! this is c - the 128 dim encoding of the image that is the basis for c` and c` proj
-            print("i'm i DDPM2d forward block (whch is basically the encoder)")
-            print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
-            # print("Context vector c:", x)
+            # print("i'm i DDPM2d forward block (whch is basically the encoder)")
+            # print("Context vector c shape:", x.shape)  # Should be [batch_size, 128]
+            # # print("Context vector c:", x)
         else: 
             x = None
         return x
 
 
     def training_step(self, batch, batch_idx: int):
-        print('='*10)
-        print('IN DDPM TRAINING STEP')
-        print('='*10)
+        # print('='*10)
+        # print('IN DDPM TRAINING STEP')
+        # print('='*10)
         # process batch
         input = batch['vol'][tio.DATA].squeeze(-1)
 
@@ -129,15 +129,15 @@ class DDPM_2D(LightningModule):
             noise = None
         #! ACTUAL CALLLLLLLLLLLL
         # reconstruct
-        loss, reco, unet_details = self.diffusion(input, cond = features, noise = noise)
+        loss, reco = self.diffusion(input, cond = features, noise = noise)
 
         self.log(f'{self.prefix}train/Loss', loss, prog_bar=False, on_step=False, on_epoch=True, batch_size=input.shape[0],sync_dist=True)
         return {"loss": loss}
     
     def validation_step(self, batch: Any, batch_idx: int):
-        print('='*10)
-        print('IN DDPM VALIDATION STEP')
-        print('='*10)
+        # print('='*10)
+        # print('IN DDPM VALIDATION STEP')
+        # print('='*10)
         input = batch['vol'][tio.DATA].squeeze(-1) 
 
         # calc features for guidance
@@ -149,15 +149,15 @@ class DDPM_2D(LightningModule):
         else: 
             noise = None
         # reconstruct
-        loss, reco, unet_details = self.diffusion(input,cond=features,noise=noise)
+        loss, reco = self.diffusion(input,cond=features,noise=noise)
 
         self.log(f'{self.prefix}val/Loss_comb', loss, prog_bar=False, on_step=False, on_epoch=True, batch_size=input.shape[0],sync_dist=True)
         return {"loss": loss}
 
     def on_test_start(self):
-        print('='*10)
-        print('IN DDPM ON TEST START DDPM2D')
-        print('='*10)
+        # print('='*10)
+        # print('IN DDPM ON TEST START DDPM2D')
+        # print('='*10)
         
         self.eval_dict = get_eval_dictionary()
         self.inds = []
@@ -169,9 +169,9 @@ class DDPM_2D(LightningModule):
             self.threshold = {}
 
     def test_step(self, batch: Any, batch_idx: int):
-        print('='*10)
-        print('IN DDPM ON TEST STEP')
-        print('='*10)
+        # print('='*10)
+        # print('IN DDPM ON TEST STEP')
+        # print('='*10)
         
         self.dataset = batch['Dataset']
         input = batch['vol'][tio.DATA]
@@ -186,9 +186,9 @@ class DDPM_2D(LightningModule):
         AnomalyScoreReg = []
         AnomalyScoreReco = []
         latentSpace = []
-        print('8'*1000)
-        print(input.size())
-        print(input.size(4))
+        # print('8'*1000)
+        # print(input.size())
+        # print(input.size(4))
         
         self.cfg['num_eval_slices']=4
         if self.cfg.get('num_eval_slices', input.size(4)) != input.size(4):
@@ -210,14 +210,14 @@ class DDPM_2D(LightningModule):
         input = input.squeeze(0).permute(3,0,1,2) # [B,C,H,W,D] -> [D,C,H,W]
         #!
         # calc features for guidance
-        print('THE WEIRD CONDITION BIT CALLED "features" in DDPM_2D')
+        # print('THE WEIRD CONDITION BIT CALLED "features" in DDPM_2D')
         features = self(input)
-        print('shape features: ', features.shape)
+        # print('shape features: ', features.shape)
         features_single = features
         #! CONDITION BIT!!!
         if self.cfg.condition:
-            print('additng features to latern space')
-            print('latent space:', latentSpace)
+            # print('additng features to latern space')
+            # print('latent space:', latentSpace)
             latentSpace.append(features_single.mean(0).squeeze().detach().cpu())
         else: 
             latentSpace.append(torch.tensor([0],dtype=float).repeat(input.shape[0]))
@@ -232,21 +232,21 @@ class DDPM_2D(LightningModule):
                 else: 
                     noise = None
                 #! actual model call
-                loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=t-1,noise=noise)
+                loss_diff, reco = self.diffusion(input,cond=features,t=t-1,noise=noise)
                 reco_ensemble += reco
                 
             reco = reco_ensemble / len(timesteps) # average over timesteps
-            print("reconstruction shape", reco.shape)
-            print("reconstruction", reco)
+            # print("reconstruction shape", reco.shape)
+            # print("reconstruction", reco)
         else :
             if self.cfg.get('noisetype') is not None:
                 noise = gen_noise(self.cfg, input.shape).to(self.device)
             else: 
                 noise = None
             #! actual model call
-            loss_diff, reco, unet_details = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
-            print("reconstruction shape", reco.shape)
-            print("reconstruction", reco)
+            loss_diff, reco = self.diffusion(input,cond=features,t=self.test_timesteps-1,noise=noise)
+            # print("reconstruction shape", reco.shape)
+            # print("reconstruction", reco)
         # calculate loss and Anomalyscores
         AnomalyScoreComb.append(loss_diff.cpu())
         AnomalyScoreReg.append(loss_diff.cpu())
@@ -255,8 +255,8 @@ class DDPM_2D(LightningModule):
         # reassamble the reconstruction volume
         final_volume = reco.clone().squeeze()
         final_volume = final_volume.permute(1,2,0) # to HxWxD
-        print('FINAL VOLUME (DDPM) shape', final_volume.shape)
-        print('FINAL VOLUME', final_volume)
+        # print('FINAL VOLUME (DDPM) shape', final_volume.shape)
+        # print('FINAL VOLUME', final_volume)
 
        
 
@@ -279,8 +279,8 @@ class DDPM_2D(LightningModule):
 
         final_volume = final_volume.unsqueeze(0)
         final_volume = final_volume.unsqueeze(0)
-        print('unsqueeze final volume shape (DDPM2d)', final_volume.shape)
-        print('unsqueeze final volume (DDPM 2D)', final_volume)
+        # print('unsqueeze final volume shape (DDPM2d)', final_volume.shape)
+        # print('unsqueeze final volume (DDPM 2D)', final_volume)
         # calculate metrics
 
         _test_step(self, final_volume, data_orig, data_seg, data_mask, batch_idx, ID, label) # everything that is independent of the model choice

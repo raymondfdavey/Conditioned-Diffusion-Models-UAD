@@ -38,12 +38,14 @@ class SparK_2D(nn.Module):
                                                 sbn=sbn, 
                                                 drop_path_rate=cfg.get('dp',0), 
                                                 verbose=False)
-        dense_decoder = LightDecoder(cfg.get('dec_dim',512), 
+        dense_decoder = LightDecoder(cfg.get('dec_dim',128), 
                                     sparse_encoder.downsample_raito,
                                     double=cfg.get('double',True), 
                                     heavy=cfg.get('hea',[0,1]), 
                                     cmid=cfg.get('cmid',0), 
                                     sbn=sbn)
+        # print(f"Encoder feature dimension: {sparse_encoder.fea_dim}")
+        # print(f"Decoder feature dimension: {dense_decoder.fea_dim}")
         input_size, downsample_raito = sparse_encoder.input_size, sparse_encoder.downsample_raito
         self.downsample_raito = downsample_raito
         fmap_size = input_size // downsample_raito
@@ -156,6 +158,8 @@ class SparK_2D(nn.Module):
         to_dec = []
         for i, bcff in enumerate(fea_bcffs):    # from the smallest feature map to the largest
             if bcff is not None:
+                # print(f"Feature level {i} shape: {bcff.shape}")
+
                 # fill in empty positions with [mask] embeddings
                 bcff = self.en_de_norms[i](bcff)
                 mask_tokens = self.mask_tokens[i].expand_as(bcff).type_as(bcff)
@@ -279,10 +283,10 @@ class SparK_2D_encoder(nn.Module):
         
 
     def forward(self, x):
-        print('IN SPARK ENCODER FORWARDDD')
-        print('x in shape', x.shape)
+        # print('IN SPARK ENCODER FORWARDDD')
+        # print('x in shape', x.shape)
         features = self.encoder(x)
-        print('out features', features.shape)
+        # print('out features', features.shape)
         return features
 
 def _make_divisible(v, divisor=8, min_value=None):

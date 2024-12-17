@@ -19,9 +19,9 @@ datamodule:
 model:
   cfg: 
     #!
-    noise_ensemble: True
+    noise_ensemble: False
     step_ensemble: [250,500,750]
-    test_timesteps: 250
+    test_timesteps: 500
     dim_mults: [1,2,2]
     unet_dim: 128
     backbone: Spark_Encoder_2D
@@ -37,11 +37,11 @@ model:
     #t2 mac
     # encoder_path: full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt # path to encoder weights
     #t1 win WSL
-    encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt # path to encoder weights
+    # encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt # path to encoder weights
     
     #t1 mac
     # encoder_path: full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-11-25_10-25-18/checkpoints/epoch-1089_step-13079_loss-0.00_fold-1.ckpt # path to encoder weights
-  
+    encoder_path: /home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-12-17_10-38-34/checkpoints/epoch-859_step-10319_loss-0.00_fold-1.ckpt
     pretrained_encoder: True
     save_to_disc: True
 

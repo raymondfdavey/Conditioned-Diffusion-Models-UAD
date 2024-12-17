@@ -27,7 +27,7 @@ cfg:
   pyramid: 4
   dp: 0
   # decoder
-  dec_dim: 512
+  dec_dim: 128
   double: True
   hea: [0,1]
   cmid: 0

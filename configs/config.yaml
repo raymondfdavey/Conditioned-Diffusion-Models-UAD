@@ -57,12 +57,12 @@ checkpoint: 'best' # which checkpoints to load
 
 
 new_wandb_run: True # if we want to reevaluate to a new wandb run 
-test_after_training: True
-onlyEval: True
+test_after_training: False
+onlyEval: False
 
 #!
 #t2 win WSL
 # load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-20_09-55-08
 
 #t1 win WSL
-load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-25_13-54-17
+# load_checkpoint: /home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-11-25_13-54-17
