@@ -130,9 +130,9 @@ class DDPM_2D(LightningModule):
         save_images_to_disk=True
         
         if 'consistency' in self.test:
-            n_runs = 25
-            n_images_to_save = 4
-            self.test_timesteps = 801
+            n_runs = 12
+            n_images_to_save = 10
+            self.test_timesteps = 950
             if 'augment' in self.test:
                 test_type='augmented_repeated'
                 print('in consistency + augment')
@@ -157,12 +157,25 @@ class DDPM_2D(LightningModule):
                 augmented_input, segmentation_masks = augment_with_tumor(input, tumor_tensors, mask_tensors, n_slices)
                 # fig = visualize_results(input, augmented_input, tumor_tensors, mask_tensors)
                 data = self.run_repeats(augmented_input, data_orig, segmentation_masks, data_mask, SCAN_ID, n_runs=n_runs, n_slices=n_slices, save_images_to_disk=save_images_to_disk, n_images_to_save = n_images_to_save)
+            elif 'half' in self.test:
+                test_type='half_repeated'
+                print('in consistency + HALF')
+                                # Create a mask for the right half of the image
+                _, _, H, W = input.shape
+                half_mask = torch.ones_like(input)
+                half_mask[..., :, W//2:] = 0  # Set right half to 0
+
+                # Apply the mask to the input
+                masked_input = input * half_mask
+
+                data = self.run_repeats(masked_input, data_orig, None, data_mask, SCAN_ID, n_runs=n_runs, n_slices=n_slices, save_images_to_disk=save_images_to_disk, n_images_to_save = n_images_to_save)
+                
             else:
                 test_type='healthy_repeated'
                 print('in consistency + healthy')
 
                 data = self.run_repeats(input, data_orig, None, data_mask, SCAN_ID, n_runs=n_runs, n_slices=n_slices, save_images_to_disk=save_images_to_disk, n_images_to_save = n_images_to_save)
-            self.save_repeat_run_data(data, SCAN_ID, test_type, n_runs, n_slices)
+            # self.save_repeat_run_data(data, SCAN_ID, test_type, n_runs, n_slices)
         else:            
             data = self.run_normal(input, data_orig, data_seg, data_mask, SCAN_ID, save_images_to_disk=save_images_to_disk)
             

@@ -42,6 +42,7 @@ def train(cfg: DictConfig):
     # model.test = ['synthetic']
     
     model.test = ['consistency']
+    model.test = ['consistency', 'half']
     # model.test = None
     whatami = trainer.test(
         model=model,
