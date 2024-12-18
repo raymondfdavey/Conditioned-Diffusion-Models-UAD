@@ -19,8 +19,8 @@ datamodule:
 model:
   cfg: 
     #!
-    noise_ensemble: False
-    step_ensemble: [250,500,750]
+    noise_ensemble: True
+    # step_ensemble: [250,500,750]
     test_timesteps: 500
     dim_mults: [1,2,2]
     unet_dim: 128

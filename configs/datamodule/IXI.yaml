@@ -33,7 +33,7 @@ cfg:
         val: ${data_dir}/Data/splits/MSLUB_val.csv
 
 
-  imageDim: [192,192,160] 
+  imageDim: [160,192,160] 
   rescaleFactor: 2
   interRes: [8,8,5] #[HxWxD]
   cropMode: 'isotropic'
@@ -68,8 +68,8 @@ cfg:
   mode: t1
   resizedEvaluation: True
   testsets: # specify which test sets to evaluate!
-  - Datamodules_train.IXI
+  # - Datamodules_train.IXI
   - Datamodules_eval.Brats21
-  - Datamodules_eval.MSLUB
+  # - Datamodules_eval.MSLUB
 
 
