@@ -20,8 +20,8 @@ os.environ['NUMEXPR_MAX_THREADS'] = '16'
 warnings.filterwarnings(
     "ignore", ".*Trying to infer the `batch_size` from an ambiguous collection.*"
 )
-full_model_ckpt_path = '/home/rd81/projects/trained_models/full_model_epoch-719_step-8639.ckpt'
-encoder_ckpt_path='/home/rd81/projects/trained_models/spark_epoch-1089_step-13079.ckpt'
+full_model_ckpt_path = '/home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-12-17_12-32-37/checkpoints/epoch-709_step-8519_loss-0.00_fold-1.ckpt'
+encoder_ckpt_path='/home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-12-17_10-38-34/checkpoints/epoch-859_step-10319_loss-0.00_fold-1.ckpt'
 
 @hydra.main(config_path='configs', config_name='config') # Hydra decorator
 def train(cfg: DictConfig): 

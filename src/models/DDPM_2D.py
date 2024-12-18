@@ -132,7 +132,7 @@ class DDPM_2D(LightningModule):
         if 'consistency' in self.test:
             n_runs = 12
             n_images_to_save = 10
-            self.test_timesteps = 950
+            self.test_timesteps = 250
             if 'augment' in self.test:
                 test_type='augmented_repeated'
                 print('in consistency + augment')
