@@ -1,4 +1,4 @@
-from src.utils.ray_utils import setup_storage, save_images, save_images_from_repeat, apply_brainmask_volume, apply_3d_median_filter, extract_key_points, load_and_preprocess_tumor,  augment_with_tumor, create_synthetic_batch
+from src.utils.ray_utils import setup_storage, save_images, save_images_from_repeat, apply_brainmask_volume, apply_3d_median_filter, extract_key_points, load_and_preprocess_tumor,  augment_with_tumor, create_synthetic_batch, add_processed_features
 from src.models.modules.cond_DDPM import GaussianDiffusion
 from src.models.modules.OpenAI_Unet import UNetModel as OpenAI_UNet
 from src.models.modules.DDPM_encoder import get_encoder
@@ -25,7 +25,7 @@ class DDPM_2D(LightningModule):
         
         #! initialising new encoder and loading in pretrained encoder weights
         with open_dict(self.cfg):
-            self.cfg['cond_dim'] = cfg.get('unet_dim',64) * 4
+            self.cfg['cond_dim'] = cfg.get('unet_dim',128)
             self.encoder, out_features = get_encoder(cfg)
         state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
         new_statedict = OrderedDict()
@@ -187,6 +187,8 @@ class DDPM_2D(LightningModule):
         save_path = HydraConfig.get().run.dir
         # Ensure the run_data directory exists
         full_path = f"{save_path}/{SCAN_ID[0].removesuffix('.nii.gz')}_{test_type}_{n_runs}_runs_{n_slices}_slices_{self.test_timesteps-1}_timesteps.pt" 
+        storage = add_processed_features(storage)
+
         torch.save(storage, full_path)
         self.for_deletion_dir = save_path
         print(f"Run data saved to {full_path}")

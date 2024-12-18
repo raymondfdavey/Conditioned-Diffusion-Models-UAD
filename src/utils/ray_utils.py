@@ -11,6 +11,114 @@ import scipy
 from scipy import ndimage
 import torchio as tio
 
+
+def add_processed_features(storage):
+    """
+    Add processed features to the existing storage dictionary
+    """
+    # Process features using both approaches
+    features_approach1 = approach1_feature_statistics(storage)
+    features_approach2 = approach2_feature_statistics(storage)
+    
+    # Add processed features to storage
+    storage['features_processed'] = {
+        'approach1': features_approach1,
+        'approach2': features_approach2
+    }
+    
+    return storage
+
+def approach1_feature_statistics(storage):
+    """
+    Approach 1: Calculate mean and variance across runs for each position in the feature maps.
+    For each slice and each layer, produces two volumes of the same dimension as the original feature map.
+    
+    Args:
+        storage (dict): The storage dictionary containing feature maps
+        
+    Returns:
+        dict: Dictionary containing mean and variance volumes for each layer and slice
+    """
+    n_slices = storage['features']['down_post_1'].shape[1]
+    results = {}
+    
+    # Process each layer in the features
+    for layer_name, feature_tensor in storage['features'].items():
+        results[layer_name] = {
+            'mean': [],
+            'variance': []
+        }
+        
+        # Process each slice separately
+        for slice_idx in range(n_slices):
+            # Get all runs for this slice
+            slice_data = feature_tensor[:, slice_idx, ...]  # Shape: [n_runs, channels, height, width]
+            
+            # Calculate mean and variance across runs
+            # Mean shape will be [channels, height, width]
+            mean_volume = torch.mean(slice_data, dim=0)
+            variance_volume = torch.var(slice_data, dim=0)
+            
+            results[layer_name]['mean'].append(mean_volume)
+            results[layer_name]['variance'].append(variance_volume)
+            
+        # Stack slices together
+        results[layer_name]['mean'] = torch.stack(results[layer_name]['mean'])
+        results[layer_name]['variance'] = torch.stack(results[layer_name]['variance'])
+    
+    return results
+
+def approach2_feature_statistics(storage):
+    """
+    Approach 2: For each run, calculate mean and variance across the feature volume,
+    then average these statistics across runs.
+    
+    Args:
+        storage (dict): The storage dictionary containing feature maps
+        
+    Returns:
+        dict: Dictionary containing averaged mean and variance maps for each layer and slice
+    """
+    n_slices = storage['features']['down_post_1'].shape[1]
+    results = {}
+    
+    # Process each layer in the features
+    for layer_name, feature_tensor in storage['features'].items():
+        results[layer_name] = {
+            'mean_map': [],
+            'variance_map': []
+        }
+        
+        # Process each slice separately
+        for slice_idx in range(n_slices):
+            slice_data = feature_tensor[:, slice_idx, ...]  # Shape: [n_runs, channels, height, width]
+            
+            # For each run, calculate mean and variance across channels
+            run_means = torch.mean(slice_data, dim=1)  # Shape: [n_runs, height, width]
+            run_variances = torch.var(slice_data, dim=1)  # Shape: [n_runs, height, width]
+            
+            # Average the means and variances across runs
+            final_mean_map = torch.mean(run_means, dim=0)  # Shape: [height, width]
+            final_variance_map = torch.mean(run_variances, dim=0)  # Shape: [height, width]
+            
+            results[layer_name]['mean_map'].append(final_mean_map)
+            results[layer_name]['variance_map'].append(final_variance_map)
+        
+        # Stack slices together
+        results[layer_name]['mean_map'] = torch.stack(results[layer_name]['mean_map'])
+        results[layer_name]['variance_map'] = torch.stack(results[layer_name]['variance_map'])
+    
+    return results
+
+
+
+
+
+
+
+
+
+
 def generate_and_save_synthetic_anomaly(save_dir):
     """
     Creates synthetic patterns and saves them as PNG files that can be used
