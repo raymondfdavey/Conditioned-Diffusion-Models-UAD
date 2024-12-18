@@ -155,7 +155,7 @@ def setup_storage(n_runs, n_slices):
 
     storage = {
         'input': torch.zeros(1, n_slices, 96, 96),  # Removed the channel dimension
-        'features_raw_embedding': torch.zeros(1, n_slices, 512), 
+        'features_raw_embedding': torch.zeros(1, n_slices, 128), 
         'full_raw_embedding': torch.zeros(1, n_slices, 1024),
         'brain_mask': torch.zeros(1, n_slices, 96, 96),     # Brain masks
         'segmentation_mask': torch.zeros(1, n_slices, 96, 96),   # Segmentation masks

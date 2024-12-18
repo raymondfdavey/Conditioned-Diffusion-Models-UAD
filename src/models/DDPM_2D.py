@@ -25,7 +25,7 @@ class DDPM_2D(LightningModule):
         
         #! initialising new encoder and loading in pretrained encoder weights
         with open_dict(self.cfg):
-            self.cfg['cond_dim'] = cfg.get('unet_dim',64) * 4
+            self.cfg['cond_dim'] = cfg.get('unet_dim',128)
             self.encoder, out_features = get_encoder(cfg)
         state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
         new_statedict = OrderedDict()
@@ -132,7 +132,7 @@ class DDPM_2D(LightningModule):
         if 'consistency' in self.test:
             n_runs = 12
             n_images_to_save = 10
-            self.test_timesteps = 950
+            self.test_timesteps = 250
             if 'augment' in self.test:
                 test_type='augmented_repeated'
                 print('in consistency + augment')
