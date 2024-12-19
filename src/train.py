@@ -20,8 +20,11 @@ os.environ['NUMEXPR_MAX_THREADS'] = '16'
 warnings.filterwarnings(
     "ignore", ".*Trying to infer the `batch_size` from an ambiguous collection.*"
 )
-full_model_ckpt_path = '/home/rd81/projects/full_logs/logs/runs/DDPM_cond_2D_spark/DDPM_2D_IXI_DDPM_cond_2D_spark__2024-12-17_12-32-37/checkpoints/epoch-709_step-8519_loss-0.00_fold-1.ckpt'
-encoder_ckpt_path='/home/rd81/projects/full_logs/logs/runs/MAE_2D/Spark_2D_IXI_MAE_2D__2024-12-17_10-38-34/checkpoints/epoch-859_step-10319_loss-0.00_fold-1.ckpt'
+
+
+
+full_model_ckpt_path = '/home/rd81/projects/models_for_testing/5_full.ckpt'
+encoder_ckpt_path='/home/rd81/projects/models_for_testing/5_encoder.ckpt'
 
 @hydra.main(config_path='configs', config_name='config') # Hydra decorator
 def train(cfg: DictConfig): 
@@ -35,14 +38,13 @@ def train(cfg: DictConfig):
     cfg.datamodule._target_ = 'src.datamodules.Datamodules_train.IXI'
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, fold=0)
     datamodule.setup()
-
-    # model.test = ['consistency', 'augment']
-    # model.test = ['consistency', 'augment']
-    # model.test = ['consistency', 'synthetic_tumour', 'augment']
-    # model.test = ['synthetic']
     
-    model.test = ['consistency']
-    model.test = ['consistency', 'half']
+    # model.test = ['consistency']
+    # model.test = ['consistency', 'half']
+    model.test = ['consistency', 'augment']
+    # model.test = ['consistency', 'synthetic_tumour', 'augment']
+    # model.test = ['consistency', 'synthetic', 'augment']
+    # model.test = ['consistency', 'synthetic', 'augment', 'synthetic_tumour']
     # model.test = None
     whatami = trainer.test(
         model=model,

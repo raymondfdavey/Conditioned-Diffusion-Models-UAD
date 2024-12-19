@@ -20,8 +20,8 @@ model:
   cfg: 
     #!
     noise_ensemble: False
-    step_ensemble: [250,500,750]
-    test_timesteps: 500
+    # step_ensemble: [250,500,750]
+    test_timesteps: 400
     dim_mults: [1,2,2]
     unet_dim: 128
     backbone: Spark_Encoder_2D

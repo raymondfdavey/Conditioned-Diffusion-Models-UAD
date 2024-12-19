@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import wandb
 import os
+import matplotlib
+matplotlib.use('Agg')  # Set to non-interactive backend
 import matplotlib.pyplot as plt
 import scipy
 from PIL import Image
@@ -25,6 +27,9 @@ def add_processed_features(storage):
         'approach1': features_approach1,
         'approach2': features_approach2
     }
+    
+    del storage['features']
+
     
     return storage
 
@@ -263,7 +268,9 @@ def setup_storage(n_runs, n_slices):
 
     storage = {
         'input': torch.zeros(1, n_slices, 96, 96),  # Removed the channel dimension
-        'features_raw_embedding': torch.zeros(1, n_slices, 128), 
+        #! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        'features_raw_embedding': torch.zeros(1, n_slices, 512), 
+        #! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'full_raw_embedding': torch.zeros(1, n_slices, 1024),
         'brain_mask': torch.zeros(1, n_slices, 96, 96),     # Brain masks
         'segmentation_mask': torch.zeros(1, n_slices, 96, 96),   # Segmentation masks

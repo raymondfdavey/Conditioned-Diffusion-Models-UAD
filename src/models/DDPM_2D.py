@@ -25,7 +25,9 @@ class DDPM_2D(LightningModule):
         
         #! initialising new encoder and loading in pretrained encoder weights
         with open_dict(self.cfg):
-            self.cfg['cond_dim'] = cfg.get('unet_dim',128)
+            #! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+            self.cfg['cond_dim'] = cfg.get('unet_dim',128) * 4
+            #! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             self.encoder, out_features = get_encoder(cfg)
         state_dict_pretrained = torch.load(encoder_ckpt_path)['state_dict']
         new_statedict = OrderedDict()
@@ -130,9 +132,8 @@ class DDPM_2D(LightningModule):
         save_images_to_disk=True
         
         if 'consistency' in self.test:
-            n_runs = 12
-            n_images_to_save = 10
-            self.test_timesteps = 250
+            n_runs = 500
+            n_images_to_save = 5
             if 'augment' in self.test:
                 test_type='augmented_repeated'
                 print('in consistency + augment')
@@ -175,7 +176,7 @@ class DDPM_2D(LightningModule):
                 print('in consistency + healthy')
 
                 data = self.run_repeats(input, data_orig, None, data_mask, SCAN_ID, n_runs=n_runs, n_slices=n_slices, save_images_to_disk=save_images_to_disk, n_images_to_save = n_images_to_save)
-            # self.save_repeat_run_data(data, SCAN_ID, test_type, n_runs, n_slices)
+            self.save_repeat_run_data(data, SCAN_ID, test_type, n_runs, n_slices)
         else:            
             data = self.run_normal(input, data_orig, data_seg, data_mask, SCAN_ID, save_images_to_disk=save_images_to_disk)
             
@@ -187,6 +188,7 @@ class DDPM_2D(LightningModule):
         save_path = HydraConfig.get().run.dir
         # Ensure the run_data directory exists
         full_path = f"{save_path}/{SCAN_ID[0].removesuffix('.nii.gz')}_{test_type}_{n_runs}_runs_{n_slices}_slices_{self.test_timesteps-1}_timesteps.pt" 
+        
         storage = add_processed_features(storage)
 
         torch.save(storage, full_path)
@@ -330,7 +332,7 @@ class DDPM_2D(LightningModule):
                 
     def on_test_end(self):
         print('='*10)
-        self.delete_hydra_and_logs()
+        # self.delete_hydra_and_logs()
         print('FINISHED TESTING')
         print('='*10)
          

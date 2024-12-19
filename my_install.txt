@@ -17,3 +17,18 @@ python run.py experiment=cDDPM/DDPM_cond_spark_2D experiment_name=STILL_SETTING_
 where this will result in logs in the folliwung:
 
 /home/rd81/projects/experiment_logs/STILL_SETTING_UP_2024-12-05_09-47-34
+
+#! to change:
+
+DDPM_2D line 28
+
+        with open_dict(self.cfg):
+            self.cfg['cond_dim'] = cfg.get('unet_dim',128) * 4
+
+IXI datamodeul line 35
+
+  imageDim: [192,192,160] 
+
+
+ray utils line 269
+        'features_raw_embedding': torch.zeros(1, n_slices, 512), 

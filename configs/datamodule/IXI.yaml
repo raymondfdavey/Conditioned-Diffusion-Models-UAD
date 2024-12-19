@@ -31,9 +31,9 @@ cfg:
       IDs: 
         test: ${data_dir}/Data/splits/MSLUB_test.csv
         val: ${data_dir}/Data/splits/MSLUB_val.csv
-
-
-  imageDim: [192,192,160] 
+  #! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+  imageDim: [160,192,160] 
+  #! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   rescaleFactor: 2
   interRes: [8,8,5] #[HxWxD]
   cropMode: 'isotropic'
